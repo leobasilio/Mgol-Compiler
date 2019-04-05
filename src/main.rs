@@ -1,4 +1,5 @@
 mod symbols;
+mod analyzers;
 
 use std::env;
 
@@ -6,7 +7,7 @@ fn run_compiler(filename: &str){
 
     let mut table = symbols::Table::new();
 
-
+    let lexical = analyzers::Lexical::new();
 
 }
 
