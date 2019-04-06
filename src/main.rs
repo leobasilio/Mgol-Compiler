@@ -3,11 +3,26 @@ mod analyzers;
 
 use std::env;
 
-fn run_compiler(filename: &str){
+fn run_compiler(filename: &str) -> std::io::Result<()> {
 
     let mut table = symbols::Table::new();
+    let mut lexical = analyzers::Lexical::new(&mut table);
 
-    let lexical = analyzers::Lexical::new();
+    lexical.load(filename)?;
+
+    loop {
+
+        let item = lexical.next_token();
+
+        println!("{0: <20} {1: <20}", item.lexeme, item.token);
+
+        if item.token.eq(symbols::tokens::EOF) {
+            break;
+        }
+
+    }
+
+    Ok(())
 
 }
 
@@ -21,7 +36,11 @@ fn main(){
 
     }else{
 
-        run_compiler(&args[1])
+        if let Err(e) = run_compiler(&args[1]) {
+
+            println!("{}", e);
+
+        }
 
     }
 

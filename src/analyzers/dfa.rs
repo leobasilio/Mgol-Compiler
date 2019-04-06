@@ -1,7 +1,6 @@
-use symbols::*;
 use std::collections::HashMap;
 
-const REJECT_STATE: i8 = -1;
+const REJECTION_STATE: i8 = -1;
 
 pub struct DFA {
     final_states: Vec<i8>,
@@ -33,12 +32,20 @@ impl DFA {
 
         }else{
 
-            self.current_state = REJECT_STATE;
+            self.current_state = REJECTION_STATE;
 
             return false;
 
         }
 
+    }
+
+    pub fn reset(&mut self){
+        self.current_state = 0;
+    }
+
+    pub fn current_state(&self) -> i8 {
+        self.current_state
     }
 
     pub fn is_accepted(&self) -> bool {
