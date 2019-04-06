@@ -2,19 +2,19 @@ use std::collections::HashMap;
 
 pub mod tokens {
 
-    pub const IDENTIFIER: &str = "_ID_";
-    pub const NUMBER: &str = "_NUM_";
-    pub const LITERAL: &str = "_LITERAL_";
-    pub const COMMENT: &str = "_COMENTARIO_";
-    pub const WHITESPACE: &str = "_BRANCO_";
-    pub const EOF: &str = "_EOF_";
-    pub const RELATIONAL: &str = "_OPR_";
-    pub const ARITHMETIC: &str = "_OPM_";
-    pub const ATTRIBUTION: &str = "_RCB_";
-    pub const OPEN_PARENTHESIS: &str = "_AB_P_";
-    pub const CLOSE_PARENTHESIS: &str = "_FC_P_";
-    pub const SEMICOLON: &str = "_PT_V_";
-    pub const ERROR: &str = "_ERRO_";
+    pub const IDENTIFIER: &str = "ID";
+    pub const NUMBER: &str = "NUM";
+    pub const LITERAL: &str = "LITERAL";
+    pub const COMMENT: &str = "COMENTARIO";
+    pub const WHITESPACE: &str = "BRANCO";
+    pub const EOF: &str = "EOF";
+    pub const RELATIONAL: &str = "OPR";
+    pub const ARITHMETIC: &str = "OPM";
+    pub const ATTRIBUTION: &str = "RCB";
+    pub const OPEN_PARENTHESIS: &str = "AB_P";
+    pub const CLOSE_PARENTHESIS: &str = "FC_P";
+    pub const SEMICOLON: &str = "PT_V";
+    pub const ERROR: &str = "ERRO";
 
 }
 
@@ -32,23 +32,56 @@ pub struct Table {
 impl Table {
 
     pub fn new() -> Self {
-        Table {
-            symbols: HashMap::new()
+
+        let mut symbols: HashMap<String, Symbol> = HashMap::new();
+
+        let keywords = [
+            "inicio",
+            "varinicio",
+            "varfim",
+            "escreva",
+            "leia",
+            "se",
+            "entao",
+            "fimse",
+            "fim",
+            "inteiro",
+            "lit",
+            "real"
+        ];
+
+        for &keyword in &keywords {
+
+            symbols.insert(String::from(keyword), Table::make_symbol(keyword, keyword));
+
         }
+
+        Table {
+            symbols
+        }
+
     }
 
     pub fn insert(&mut self, lexeme: &str, token: &str) -> &Symbol {
 
         let key = String::from(lexeme);
 
-        self.symbols.insert(key.clone(), Symbol {
-            lexeme: key.clone(),
-            token: String::from(token),
-            data_type: None
-        });
+        if !self.symbols.contains_key(&key) {
+
+            self.symbols.insert(key.clone(), Table::make_symbol(lexeme, token));
+
+        }
 
         return self.symbols.get(&key).unwrap();
 
+    }
+
+    fn make_symbol(lexeme: &str, token: &str) -> Symbol{
+        Symbol {
+            lexeme: String::from(lexeme),
+            token: String::from(token),
+            data_type: None
+        }
     }
 
 }

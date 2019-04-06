@@ -22,7 +22,7 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
         }else{
 
-            println!("{0: <20} {1: <20}", item.lexeme, item.token);
+            println!("{0: <20} {1: <20}", item.token, item.lexeme);
 
             if item.token.eq(symbols::tokens::EOF) {
 
