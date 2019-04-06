@@ -8,6 +8,8 @@ use analyzers::dfa::*;
 pub struct Lexical<'a> {
     source_code: String,
     current_position: usize,
+    current_column: u32,
+    current_line: u32,
     automaton: DFA,
     table: &'a mut symbols::Table
 }
@@ -96,7 +98,9 @@ impl<'a> Lexical<'a> {
             source_code: String::new(),
             current_position: 0,
             automaton: dfa,
-            table: table
+            table: table,
+            current_line: 1,
+            current_column: 1
         }
 
     }
@@ -127,6 +131,17 @@ impl<'a> Lexical<'a> {
                 count_read += 1;
 
                 if self.automaton.read_symbol(next_char) {
+
+                    if next_char == '\n' {
+
+                        self.current_line += 1;
+                        self.current_column = 1;
+
+                    }else{
+
+                        self.current_column += 1;
+
+                    }
 
                     if self.automaton.is_accepted() {
 
@@ -174,7 +189,7 @@ impl<'a> Lexical<'a> {
 
                 self.current_position += count_accepted;
 
-                if class != tokens::WHITESPACE {
+                if class != tokens::WHITESPACE && class != tokens::COMMENT {
 
                     return self.table.insert(&self.source_code[i..j], class).clone();
 
@@ -204,6 +219,14 @@ impl<'a> Lexical<'a> {
             _ => tokens::ERROR
         }
 
+    }
+
+    pub fn current_line(&self) -> u32 {
+        self.current_line
+    }
+
+    pub fn current_column(&self) -> u32 {
+        self.current_column
     }
 
 }
