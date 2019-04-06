@@ -6,7 +6,7 @@ use symbols::tokens;
 use analyzers::dfa::*;
 
 pub struct Lexical<'a> {
-    source_code: String,
+    source_code: Vec<char>,
     current_position: usize,
     current_column: u32,
     current_line: u32,
@@ -78,38 +78,41 @@ impl<'a> Lexical<'a> {
             dfa.add_transition(7, c, 7);
         }
 
-        for b in 0..=255 {
+        for b in b'\0'..=b'\xFF' {
 
-            if let Some(c) = std::char::from_u32(b) {
+            let c = &(b as char);
 
-                if c != '"' {
-                    dfa.add_transition(8, &c, 8);
-                }
+            if *c != '"' {
+                dfa.add_transition(8, c, 8);
+            }
 
-                if c != '}' {
-                    dfa.add_transition(10, &c, 10);
-                }
-
+            if *c != '}' {
+                dfa.add_transition(10, c, 10);
             }
 
         }
 
         Lexical {
-            source_code: String::new(),
+            source_code: vec![],
             current_position: 0,
-            automaton: dfa,
-            table: table,
             current_line: 1,
-            current_column: 1
+            current_column: 1,
+            automaton: dfa,
+            table: table
         }
 
     }
 
     pub fn load(&mut self, filename: &str) -> io::Result<()> {
 
-        fs::File::open(filename)?.read_to_string(&mut self.source_code)?;
+        let mut content = String::new();
 
+        fs::File::open(filename)?.read_to_string(&mut content)?;
+
+        self.source_code = content.chars().collect();
         self.current_position = 0;
+        self.current_line = 1;
+        self.current_column = 1;
 
         Ok(())
 
@@ -121,12 +124,11 @@ impl<'a> Lexical<'a> {
 
             self.automaton.reset();
 
-            let mut reader = self.source_code.chars().skip(self.current_position);
             let mut count_read = 0;
             let mut count_accepted = 0;
             let mut final_state = 0;
 
-            while let Some(next_char) = reader.next() {
+            for &next_char in &self.source_code[self.current_position..] {
 
                 count_read += 1;
 
@@ -175,7 +177,7 @@ impl<'a> Lexical<'a> {
                 self.current_position += count_read;
 
                 return symbols::Symbol {
-                    lexeme: String::from(&self.source_code[i..j]),
+                    lexeme: self.source_code[i..j].iter().collect(),
                     token: String::from(tokens::ERROR),
                     data_type: None
                 };
@@ -191,7 +193,9 @@ impl<'a> Lexical<'a> {
 
                 if class != tokens::WHITESPACE && class != tokens::COMMENT {
 
-                    return self.table.insert(&self.source_code[i..j], class).clone();
+                    let lexeme: String = self.source_code[i..j].iter().collect();
+
+                    return self.table.insert(&lexeme, class).clone();
 
                 }
 
