@@ -3,7 +3,7 @@ use std::io;
 use std::io::Read;
 use symbols;
 use symbols::tokens;
-use analyzers::dfa::*;
+use analyzers::dfa::DFA;
 
 pub struct Lexical<'a> {
     source_code: Vec<char>,
@@ -168,7 +168,7 @@ impl<'a> Lexical<'a> {
 
             } else {
 
-                let class = self.find_class(final_state);
+                let class = Lexical::find_class(final_state);
                 let lexeme = self.extract_lexeme(count_accepted);
 
                 if class != tokens::WHITESPACE && class != tokens::COMMENT {
@@ -210,7 +210,7 @@ impl<'a> Lexical<'a> {
 
     }
 
-    fn find_class(&self, state: i8) -> &'static str {
+    fn find_class(state: i8) -> &'static str {
 
         match state {
             0 => tokens::EOF,
