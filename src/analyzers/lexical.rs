@@ -8,8 +8,8 @@ use analyzers::dfa::*;
 pub struct Lexical<'a> {
     source_code: Vec<char>,
     current_position: usize,
-    current_column: u32,
-    current_line: u32,
+    current_column: usize,
+    current_line: usize,
     automaton: DFA,
     table: &'a mut symbols::Table
 }
@@ -134,17 +134,6 @@ impl<'a> Lexical<'a> {
 
                 if self.automaton.read_symbol(next_char) {
 
-                    if next_char == '\n' {
-
-                        self.current_line += 1;
-                        self.current_column = 1;
-
-                    }else{
-
-                        self.current_column += 1;
-
-                    }
-
                     if self.automaton.is_accepted() {
 
                         count_accepted = count_read;
@@ -171,13 +160,8 @@ impl<'a> Lexical<'a> {
 
             }else if count_accepted == 0 {
 
-                let i = self.current_position;
-                let j = i + count_read;
-
-                self.current_position += count_read;
-
                 return symbols::Symbol {
-                    lexeme: self.source_code[i..j].iter().collect(),
+                    lexeme: self.extract_lexeme(count_read),
                     token: String::from(tokens::ERROR),
                     data_type: None
                 };
@@ -185,15 +169,9 @@ impl<'a> Lexical<'a> {
             } else {
 
                 let class = self.find_class(final_state);
-
-                let i = self.current_position;
-                let j = i + count_accepted;
-
-                self.current_position += count_accepted;
+                let lexeme = self.extract_lexeme(count_accepted);
 
                 if class != tokens::WHITESPACE && class != tokens::COMMENT {
-
-                    let lexeme: String = self.source_code[i..j].iter().collect();
 
                     return self.table.insert(&lexeme, class).clone();
 
@@ -202,6 +180,33 @@ impl<'a> Lexical<'a> {
             }
 
         }
+
+    }
+
+    fn extract_lexeme(&mut self, length: usize) -> String {
+
+        let i = self.current_position;
+        let j = i + length;
+        let lexeme: String = self.source_code[i..j].iter().collect();
+
+        self.current_position += length;
+
+        for c in lexeme.chars() {
+
+            if c == '\n' {
+
+                self.current_line += 1;
+                self.current_column = 1;
+
+            }else{
+
+                self.current_column += 1;
+
+            }
+
+        }
+
+        return lexeme;
 
     }
 
@@ -225,11 +230,11 @@ impl<'a> Lexical<'a> {
 
     }
 
-    pub fn current_line(&self) -> u32 {
+    pub fn current_line(&self) -> usize {
         self.current_line
     }
 
-    pub fn current_column(&self) -> u32 {
+    pub fn current_column(&self) -> usize {
         self.current_column
     }
 

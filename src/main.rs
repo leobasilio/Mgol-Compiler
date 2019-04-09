@@ -16,7 +16,7 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
         if item.token.eq(symbols::tokens::ERROR) {
 
-            println!("{0: <20} Token inválido: Linha {1} Coluna {2}", item.lexeme, lexical.current_line(), lexical.current_column());
+            println!("{0: <20} Token inválido: Linha {1} Coluna {2}", item.lexeme, lexical.current_line(), lexical.current_column() - item.lexeme.chars().count());
 
             break;
 
