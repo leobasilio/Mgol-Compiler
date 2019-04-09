@@ -10,6 +10,8 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
     lexical.load(filename)?;
 
+    println!("{0: <20} {1: <30} {2: <20}", "TOKEN", "LEXEMA", "TIPO");
+
     loop {
 
         let item = lexical.next_token();
@@ -22,7 +24,7 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
         }else{
 
-            println!("{0: <20} {1: <20}", item.token, item.lexeme);
+            println!("{0: <20} {1: <30} {2: <20}", item.token, item.lexeme, item.data_type.unwrap_or("-".to_string()));
 
             if item.token.eq(symbols::tokens::EOF) {
 
