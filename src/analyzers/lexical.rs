@@ -152,19 +152,11 @@ impl<'a> Lexical<'a> {
 
             if count_read == 0 {
 
-                return symbols::Symbol {
-                    lexeme: String::new(),
-                    token: String::from(tokens::EOF),
-                    data_type: None
-                };
+                return symbols::Table::make_symbol("", tokens::EOF);
 
             }else if count_accepted == 0 {
 
-                return symbols::Symbol {
-                    lexeme: self.extract_lexeme(count_read),
-                    token: String::from(tokens::ERROR),
-                    data_type: None
-                };
+                return symbols::Table::make_symbol(&self.extract_lexeme(count_read), tokens::ERROR);
 
             } else {
 
@@ -173,7 +165,15 @@ impl<'a> Lexical<'a> {
 
                 if class != tokens::WHITESPACE && class != tokens::COMMENT {
 
-                    return self.table.insert(&lexeme, class).clone();
+                    if class == tokens::IDENTIFIER {
+
+                        return self.table.insert(&lexeme, class);
+
+                    }else{
+
+                        return symbols::Table::make_symbol(&lexeme, class);
+
+                    }
 
                 }
 

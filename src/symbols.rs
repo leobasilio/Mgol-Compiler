@@ -62,7 +62,7 @@ impl Table {
 
     }
 
-    pub fn insert(&mut self, lexeme: &str, token: &str) -> &Symbol {
+    pub fn insert(&mut self, lexeme: &str, token: &str) -> Symbol {
 
         let key = String::from(lexeme);
 
@@ -72,11 +72,11 @@ impl Table {
 
         }
 
-        return self.symbols.get(&key).unwrap();
+        return self.symbols.get(&key).unwrap().clone();
 
     }
 
-    fn make_symbol(lexeme: &str, token: &str) -> Symbol{
+    pub fn make_symbol(lexeme: &str, token: &str) -> Symbol{
         Symbol {
             lexeme: String::from(lexeme),
             token: String::from(token),
