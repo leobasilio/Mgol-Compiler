@@ -14,23 +14,19 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
     loop {
 
+        let current_line = lexical.current_line();
+        let current_column = lexical.current_column();
         let item = lexical.next_token();
+
+        println!("{0: <20} {1: <30} {2: <20}", item.token, item.lexeme, item.data_type.unwrap_or("-".to_string()));
 
         if item.token.eq(symbols::tokens::ERROR) {
 
-            println!("{0: <20} Token inválido: Linha {1} Coluna {2}", item.lexeme, lexical.current_line(), lexical.current_column() - item.lexeme.chars().count());
+            println!("{0: <20} ^ Token inválido: Linha {1} Coluna {2}", "", current_line, current_column);
+
+        }else if item.token.eq(symbols::tokens::EOF) {
 
             break;
-
-        }else{
-
-            println!("{0: <20} {1: <30} {2: <20}", item.token, item.lexeme, item.data_type.unwrap_or("-".to_string()));
-
-            if item.token.eq(symbols::tokens::EOF) {
-
-                break;
-
-            }
 
         }
 
