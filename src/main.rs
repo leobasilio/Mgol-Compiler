@@ -2,17 +2,26 @@ mod symbols;
 mod analyzers;
 
 use std::env;
+use std::error::Error;
 
-fn run_compiler(filename: &str) -> std::io::Result<()> {
+fn run_compiler(filename: &str) -> Result<(), String> {
 
     let mut table = symbols::Table::new();
     let mut lexical = analyzers::Lexical::new(&mut table);
+    let mut syntatic = analyzers::Syntactic::new();
 
-    lexical.load(filename)?;
+    if let Err(error) = lexical.load(filename) {
 
-    println!("{0: <20} {1: <30} {2: <20}", "TOKEN", "LEXEMA", "TIPO");
+        return Err(error.description().to_string());
 
-    loop {
+    }
+
+    syntatic.run(&mut lexical)?;
+
+    println!("Aceitou!");
+
+
+    /*loop {
 
         let current_line = lexical.current_line();
         let current_column = lexical.current_column();
@@ -30,7 +39,7 @@ fn run_compiler(filename: &str) -> std::io::Result<()> {
 
         }
 
-    }
+    }*/
 
     Ok(())
 
