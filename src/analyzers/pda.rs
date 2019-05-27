@@ -11,7 +11,8 @@ pub struct PDA {
     stack: Vec<i8>,
     actions: HashMap<(i8,String),(ActionType,i8)>,
     gotos: HashMap<(i8,String),i8>,
-    reductions: HashMap<i8,(i8,String)>
+    reductions: HashMap<i8,(String, String,i8)>,
+    follows: HashMap<i8,Vec<String>>
 }
 
 impl PDA {
@@ -22,7 +23,8 @@ impl PDA {
             stack: vec![0],
             actions: HashMap::new(),
             gotos: HashMap::new(),
-            reductions: HashMap::new()
+            reductions: HashMap::new(),
+            follows: HashMap::new()
         }
 
     }
@@ -39,20 +41,28 @@ impl PDA {
 
     }
 
-    pub fn add_reduction(&mut self, rule_nr: i8, pop_count: i8, symbol: &str){
+    pub fn add_reduction(&mut self, rule_nr: i8, left_side: &str, right_side: &str){
 
-        self.reductions.insert(rule_nr, (pop_count, String::from(symbol)));
+        self.reductions.insert(rule_nr, (String::from(left_side),
+                                         String::from(right_side),
+                                         right_side.split(' ').count() as i8));
 
     }
 
-    pub fn read(&mut self, lexeme: &str) -> Result<bool, String>{
+    pub fn add_follow(&mut self, state: i8, follow_set: &[&str]){
+
+        self.follows.insert(state, follow_set.iter().map(|s| s.to_string()).collect());
+
+    }
+
+    pub fn read(&mut self, lexeme: &String) -> Result<bool, String>{
 
         loop {
 
             if let Some(&current_state) = self.stack.last() {
 
                 if let Some(&(action_type, action_param)) =
-                   self.actions.get(&(current_state, lexeme.to_string())) {
+                   self.actions.get(&(current_state, lexeme.clone())) {
 
                     match action_type {
 
@@ -66,9 +76,9 @@ impl PDA {
 
                         ActionType::REDUCE => {
 
-                            if let Err(error) = self.reduce(action_param) {
+                            if let Err(e) = self.reduce(action_param) {
 
-                                return Err(error);
+                                return Err(e);
 
                             }
 
@@ -80,7 +90,7 @@ impl PDA {
 
                 }else{
 
-                    return Err(format!("Ação não encontrada: [{},{}]", current_state, lexeme));
+                    self.error(current_state, lexeme);
 
                 }
 
@@ -98,39 +108,51 @@ impl PDA {
 
     fn reduce(&mut self, rule_nr: i8) -> Result<(), String> {
 
-        let stack = &mut self.stack;
+        if let Some((rule_left_side, _rule_right_side, rule_pop_count)) = self.reductions.get(&rule_nr) {
 
-        if let Some((reduction_pop_count, reduction_symbol)) = self.reductions.get(&rule_nr) {
+            for _ in 0..*rule_pop_count {
 
-            for _ in 0..*reduction_pop_count {
-
-                stack.pop();
+                self.stack.pop();
 
             }
 
-            if let Some(&current_state) = stack.last() {
+            if let Some(&current_state) = self.stack.last() {
 
-                if let Some(&new_state) = self.gotos.get(&(current_state, reduction_symbol.to_string())) {
+                if let Some(&new_state) = self.gotos.get(&(current_state, rule_left_side.to_string())) {
 
-                    stack.push(new_state);
+                    self.stack.push(new_state);
 
                     return Ok(())
 
                 }else{
 
-                    return Err(format!("Desvio não encontrado [{},{}]", current_state, reduction_symbol));
+                    return Err(format!("Desvio não encontrado [{},{}]", current_state, rule_left_side));
 
                 }
 
             }else{
 
-                return Err(format!("Pilha vazia na redução [{},{}]", reduction_pop_count, reduction_symbol));
+                return Err(format!("Pilha vazia na redução [{},{}]", rule_pop_count, rule_left_side));
 
             }
 
         }else{
 
             return Err(format!("Redução não encontrada [{}]", rule_nr));
+
+        }
+
+    }
+
+    fn error(&mut self, current_state: i8, lexeme: &String){
+
+        let transitions_count = self.actions.keys().filter(|k| k.0 == current_state).count();
+
+        if transitions_count == 1 {
+
+
+
+        }else{
 
         }
 

@@ -13,44 +13,125 @@ impl Syntactic {
 
         let mut pda = PDA::new();
 
-        pda.add_reduction(1, 3, "P");
-        pda.add_reduction(2, 2, "V");
-        pda.add_reduction(3, 2, "LV");
-        pda.add_reduction(4, 2, "LV");
-        pda.add_reduction(5, 3, "D");
-        pda.add_reduction(6, 1, "TIPO");
-        pda.add_reduction(7, 1, "TIPO");
-        pda.add_reduction(8, 1, "TIPO");
-        pda.add_reduction(9, 2, "A");
-        pda.add_reduction(10, 3, "ES");
-        pda.add_reduction(11, 3, "ES");
-        pda.add_reduction(12, 1, "ARG");
-        pda.add_reduction(13, 1, "ARG");
-        pda.add_reduction(14, 1, "ARG");
-        pda.add_reduction(15, 2, "A");
-        pda.add_reduction(16, 4, "CMD");
-        pda.add_reduction(17, 3, "LD");
-        pda.add_reduction(18, 1, "LD");
-        pda.add_reduction(19, 1, "OPRD");
-        pda.add_reduction(20, 1, "OPRD");
-        pda.add_reduction(21, 2, "A");
-        pda.add_reduction(22, 2, "COND");
-        pda.add_reduction(23, 5, "CABEÇALHO");
-        pda.add_reduction(24, 3, "EXP_R");
-        pda.add_reduction(25, 2, "CORPO");
-        pda.add_reduction(26, 2, "CORPO");
-        pda.add_reduction(27, 2, "CORPO");
-        pda.add_reduction(28, 2, "CORPO");
-        pda.add_reduction(29, 1, "CORPO");
-        pda.add_reduction(30, 2, "A");
-        pda.add_reduction(31, 2, "REP");
-        pda.add_reduction(32, 5, "CABEÇALHOREP");
-        pda.add_reduction(33, 2, "CORPOREP");
-        pda.add_reduction(34, 2, "CORPOREP");
-        pda.add_reduction(35, 2, "CORPOREP");
-        pda.add_reduction(36, 2, "CORPOREP");
-        pda.add_reduction(37, 1, "CORPOREP");
-        pda.add_reduction(38, 1, "A");
+        pda.add_follow(0, &[""]);
+        pda.add_follow(1, &[""]);
+        pda.add_follow(2, &[""]);
+        pda.add_follow(3, &[""]);
+        pda.add_follow(4, &[""]);
+        pda.add_follow(5, &[""]);
+        pda.add_follow(6, &[""]);
+        pda.add_follow(7, &[""]);
+        pda.add_follow(8, &[""]);
+        pda.add_follow(9, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(10, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(11, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(12, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(13, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(14, &["leia", "escreva", "id", "fimse", "se", "enquanto"]);
+        pda.add_follow(15, &["leia", "escreva", "id", "fimenquanto", "se", "enquanto"]);
+        pda.add_follow(16, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(17, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(18, &[";"]);
+        pda.add_follow(19, &[";"]);
+        pda.add_follow(20, &[";"]);
+        pda.add_follow(21, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(22, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(23, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(24, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(25, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(26, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(27, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(28, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(29, &[";"]);
+        pda.add_follow(30, &[";"]);
+        pda.add_follow(31, &[";"]);
+        pda.add_follow(32, &["opm", ";", "opr", ")"]);
+        pda.add_follow(33, &["opm", ";", "opr", ")"]);
+        pda.add_follow(34, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(35, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(36, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(37, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(38, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(39, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(40, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(41, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(42, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(43, &["fim", "leia", "escreva", "id", "se", "enquanto", "fimse", "fimenquanto"]);
+        pda.add_follow(44, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(45, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(46, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(47, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(48, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(49, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(50, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(51, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(52, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(53, &["leia", "escreva", "id", "fimse", "se", "enquanto", "fim", "fimenquanto"]);
+        pda.add_follow(54, &["leia", "escreva", "id", "fimse", "se", "enquanto"]);
+        pda.add_follow(55, &["leia", "escreva", "id", "fimse", "se", "enquanto"]);
+        pda.add_follow(56, &["leia", "escreva", "id", "fimse", "se", "enquanto"]);
+        pda.add_follow(57, &["leia", "escreva", "id", "fimse", "se", "enquanto"]);
+        pda.add_follow(58, &[")"]);
+        pda.add_follow(59, &[")"]);
+        pda.add_follow(60, &[")"]);
+        pda.add_follow(61, &["leia", "escreva", "id", "fimenquanto", "se", "enquanto"]);
+        pda.add_follow(62, &["leia", "escreva", "id", "fimenquanto", "se", "enquanto"]);
+        pda.add_follow(63, &["leia", "escreva", "id", "fimenquanto", "se", "enquanto"]);
+        pda.add_follow(64, &["leia", "escreva", "id", "fimenquanto", "se", "enquanto"]);
+        pda.add_follow(65, &[""]);
+        pda.add_follow(66, &[""]);
+        pda.add_follow(67, &[""]);
+        pda.add_follow(68, &[""]);
+        pda.add_follow(69, &[""]);
+        pda.add_follow(70, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(71, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(72, &["varfim", "id"]);
+        pda.add_follow(73, &["fim", "leia", "escreva", "id", "se", "enquanto"]);
+        pda.add_follow(74, &[";"]);
+        pda.add_follow(75, &[";"]);
+        pda.add_follow(76, &[";"]);
+        pda.add_follow(77, &["varfim", "id"]);
+        pda.add_follow(78, &["varfim", "id"]);
+
+        pda.add_reduction(0, "P'", "P");
+        pda.add_reduction(1, "P", "inicio V A");
+        pda.add_reduction(2, "V", "varinicio LV");
+        pda.add_reduction(3, "LV", "D LV");
+        pda.add_reduction(4, "LV", "varfim ;");
+        pda.add_reduction(5, "D", "id TIPO ;");
+        pda.add_reduction(6, "TIPO", "int");
+        pda.add_reduction(7, "TIPO", "real");
+        pda.add_reduction(8, "TIPO", "lit");
+        pda.add_reduction(9, "A", "ES A");
+        pda.add_reduction(10, "ES", "leia id ;");
+        pda.add_reduction(11, "ES", "escreva ARG ;");
+        pda.add_reduction(12, "ARG", "literal");
+        pda.add_reduction(13, "ARG", "num");
+        pda.add_reduction(14, "ARG", "id");
+        pda.add_reduction(15, "A", "CMD A");
+        pda.add_reduction(16, "CMD", "id rcb LD ;");
+        pda.add_reduction(17, "LD", "OPRD opm OPRD");
+        pda.add_reduction(18, "LD", "OPRD");
+        pda.add_reduction(19, "OPRD", "id");
+        pda.add_reduction(20, "OPRD", "num");
+        pda.add_reduction(21, "A", "COND A");
+        pda.add_reduction(22, "COND", "CABEÇALHO CORPO");
+        pda.add_reduction(23, "CABEÇALHO", "se ( EXP_R ) então");
+        pda.add_reduction(24, "EXP_R", "OPRD opr OPRD");
+        pda.add_reduction(25, "CORPO", "ES CORPO");
+        pda.add_reduction(26, "CORPO", "CMD CORPO");
+        pda.add_reduction(27, "CORPO", "COND CORPO");
+        pda.add_reduction(28, "CORPO", "REP CORPO");
+        pda.add_reduction(29, "CORPO", "fimse");
+        pda.add_reduction(30, "A", "REP A");
+        pda.add_reduction(31, "REP", "CABEÇALHOREP CORPOREP");
+        pda.add_reduction(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faça");
+        pda.add_reduction(33, "CORPOREP", "ES CORPOREP");
+        pda.add_reduction(34, "CORPOREP", "CMD CORPOREP");
+        pda.add_reduction(35, "CORPOREP", "COND CORPOREP");
+        pda.add_reduction(36, "CORPOREP", "REP CORPOREP");
+        pda.add_reduction(37, "CORPOREP", "fimenquanto");
+        pda.add_reduction(38, "A", "fim");
 
         pda.add_action(0, "inicio", ActionType::SHIFT, 2);
         pda.add_action(1, "", ActionType::ACCEPT, 0);
@@ -488,33 +569,31 @@ impl Syntactic {
 
         loop {
 
-            /*let current_line = lexical.current_line();
-            let current_column = lexical.current_column();*/
+            let current_line = lexical.current_line();
+            let current_column = lexical.current_column();
             let item = lexical.next_token();
-            let eof = item.token.eq(symbols::tokens::EOF);
-            let lexeme = Syntactic::get_pda_lexeme(&item);
 
-            match self.automaton.read(&lexeme) {
+            match self.automaton.read(&Syntactic::get_pda_lexeme(&item)) {
 
                 Ok(accepted) => {
 
-                    if eof && !accepted {
+                    if item.token.eq(symbols::tokens::EOF) {
 
-                        return Err("Final inesperado do arquivo".to_string());
+                        if accepted {
 
-                    }else if !eof && accepted {
+                            return Ok(());
 
-                        return Err("Excesso de conteúdo no código".to_string());
+                        }else {
 
-                    }else if eof && accepted {
+                            return Err("Final inesperado do arquivo".to_string());
 
-                        return Ok(())
+                        }
 
                     }
 
                 },
 
-                Err(message) => return Err(format!("{}, in: {}", message, item.lexeme))
+                Err(e) => return Err(format!("{}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme))
 
             }
 

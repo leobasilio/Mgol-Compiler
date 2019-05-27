@@ -10,9 +10,9 @@ fn run_compiler(filename: &str) -> Result<(), String> {
     let mut lexical = analyzers::Lexical::new(&mut table);
     let mut syntatic = analyzers::Syntactic::new();
 
-    if let Err(error) = lexical.load(filename) {
+    if let Err(e) = lexical.load(filename) {
 
-        return Err(error.description().to_string());
+        return Err(e.description().to_string());
 
     }
 
