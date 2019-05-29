@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use analyzers::error::PdaError;
 
 #[derive(Clone,Copy)]
 pub enum ActionMethod {
@@ -41,10 +42,12 @@ pub struct PDA {
     // non_terminal -> follow_set
     follows: HashMap<String, Vec<String>>,
 
-    // state -> State
+    // state -> Reduction
     reductions: HashMap<i8, Reduction>,
 
-    panicking: Vec<String>
+    panicking: Vec<String>,
+
+    current_lexeme: String
 
 }
 
@@ -59,7 +62,8 @@ impl PDA {
             rules: HashMap::new(),
             follows: HashMap::new(),
             reductions: HashMap::new(),
-            panicking: vec![]
+            panicking: vec![],
+            current_lexeme: String::from("")
         }
 
     }
@@ -103,25 +107,21 @@ impl PDA {
 
     }
 
-    pub fn read(&mut self, lexeme: &String) -> Result<bool, String> {
+    pub fn read(&mut self, lexeme: &str) -> Result<bool, PdaError> {
+
+        if self.panic_discard(lexeme) {
+
+            return Ok(false);
+
+        }
+
+        self.current_lexeme = lexeme.to_string();
 
         loop {
 
-            if !self.panicking.is_empty() {
+            if let Some(&current_state) = self.stack.last() {
 
-                if self.panicking.contains(lexeme) {
-
-                    self.panicking.clear();
-
-                }else{
-
-                    return Ok(false);
-
-                }
-
-            }else if let Some(&current_state) = self.stack.last() {
-
-                if let Some(&action) = self.actions.get(&(current_state, lexeme.clone())) {
+                if let Some(&action) = self.actions.get(&(current_state, lexeme.to_string())) {
 
                     if let Some(accepted) = self.action_run(current_state, &action) {
 
@@ -129,23 +129,37 @@ impl PDA {
 
                     }
 
-                }else{
+                }else if let Some(e) = self.error(current_state) {
 
-                    if let Some(e) = self.error(current_state) {
-
-                        return Err(e);
-
-                    }
+                    return Err(e);
 
                 }
 
             }else{
 
-                panic!("Sem estado atual");
+                panic!("Pilha vazia: sem estado atual");
 
             }
 
         }
+
+    }
+
+    fn panic_discard(&mut self, lexeme: &str) -> bool {
+
+        if !self.panicking.is_empty() {
+
+            if !self.panicking.contains(&lexeme.to_string()) {
+
+                return true;
+
+            }
+
+            self.panicking.clear();
+
+        }
+
+        return false;
 
     }
 
@@ -179,6 +193,8 @@ impl PDA {
 
         self.stack.push(new_state);
 
+        self.print_push();
+
     }
 
     fn action_reduce(&mut self, current_state: i8, panic_mode: bool){
@@ -186,6 +202,8 @@ impl PDA {
         if let Some(reduction) = self.reductions.get(&current_state) {
 
             if let Some(rule) = self.rules.get(&reduction.rule_nr) {
+
+                self.print_pop();
 
                 for _ in 0..reduction.pop_count {
 
@@ -213,7 +231,7 @@ impl PDA {
 
                         self.stack.push(new_state);
 
-                        //println!("{} -> {} [{},{}]", rule.left_side, rule.right_side, current_state, new_state);
+                        self.print_push();
 
                     }else{
 
@@ -241,23 +259,21 @@ impl PDA {
 
     }
 
-    fn error(&mut self, current_state: i8) -> Option<String> {
+    fn error(&mut self, current_state: i8) -> Option<PdaError> {
 
         let terminals: Vec<String> = self.actions.keys()
                                                  .filter(|(state, _)| *state == current_state)
                                                  .map(|(_, terminal)| terminal.clone())
                                                  .collect();
 
+        self.print_error();
+
         if terminals.len() == 1 {
 
             let terminal = terminals.first().unwrap();
             let action = self.actions.get(&(current_state, terminal.to_string())).unwrap().clone();
 
-            if let Some(_) = self.action_run(current_state, &action) {
-
-                return Some(format!("Esperado \"{}\"", terminal));
-
-            }else{
+            if self.action_run(current_state, &action) == None {
 
                 return None;
 
@@ -267,9 +283,49 @@ impl PDA {
 
             self.action_reduce(current_state, true);
 
-            return Some(format!("Esperado \"{}\"", terminals.join("\", \"")));
-
         }
+
+        return Some(PdaError::new(terminals));
+
+    }
+
+    // Temporário
+
+    fn print_push(&self){
+
+        let current_state = self.stack.last().unwrap();
+        let reduction = self.reductions.get(current_state).unwrap();
+        let rule = self.rules.get(&reduction.rule_nr).unwrap();
+
+        let mut symbols: Vec<&str> = rule.right_side.split(' ').collect();
+
+        symbols.insert(reduction.pop_count as usize, ".");
+
+        println!("\x1B[0;32m{4:15} [{3:2}] {0:>2$} -> {1}\x1B[0m", rule.left_side, symbols.join(" "), self.stack.len() + rule.left_side.len(), current_state, self.current_lexeme);
+
+    }
+
+    fn print_pop(&self){
+
+        let current_state = self.stack.last().unwrap();
+        let reduction = self.reductions.get(current_state).unwrap();
+        let rule = self.rules.get(&reduction.rule_nr).unwrap();
+
+        let mut symbols: Vec<&str> = rule.right_side.split(' ').collect();
+
+        symbols.insert(reduction.pop_count as usize, ".");
+
+        let left_side = symbols.join(" ");
+
+        println!("\x1B[0;31m{4:15} [{3:2}] {1:>2$} -> {0}\x1B[0m", rule.left_side, left_side, self.stack.len() + left_side.len(), current_state, self.current_lexeme);
+
+    }
+
+    fn print_error(&self){
+
+        let current_state = self.stack.last().unwrap();
+
+        println!("\x1B[0;33m{0:15} [{1:2}] {2:>3$} \x1B[0m", self.current_lexeme, current_state, "ERRO", self.stack.len()+4);
 
     }
 

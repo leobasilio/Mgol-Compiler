@@ -45,7 +45,7 @@ impl Syntactic {
         pda.add_rule(29, "CORPO", "fimse");
         pda.add_rule(30, "A", "REP A");
         pda.add_rule(31, "REP", "CABEÇALHOREP CORPOREP");
-        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faça");
+        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faca");
         pda.add_rule(33, "CORPOREP", "ES CORPOREP");
         pda.add_rule(34, "CORPOREP", "CMD CORPOREP");
         pda.add_rule(35, "CORPOREP", "COND CORPOREP");
@@ -341,7 +341,7 @@ impl Syntactic {
         pda.add_action(61, "id", ActionMethod::SHIFT, 32);
         pda.add_action(61, "num", ActionMethod::SHIFT, 33);
         pda.add_action(62, ")", ActionMethod::SHIFT, 63);
-        pda.add_action(63, "faça", ActionMethod::SHIFT, 64);
+        pda.add_action(63, "faca", ActionMethod::SHIFT, 64);
         pda.add_action(64, "id", ActionMethod::REDUCE, 32);
         pda.add_action(64, "leia", ActionMethod::REDUCE, 32);
         pda.add_action(64, "escreva", ActionMethod::REDUCE, 32);
@@ -501,7 +501,7 @@ impl Syntactic {
 
         pda.add_reduction(0, 0, 0);
         pda.add_reduction(1, 0, 1);
-        pda.add_reduction(2, 0, 1);
+        pda.add_reduction(2, 1, 1);
         pda.add_reduction(3, 1, 2);
         pda.add_reduction(4, 9, 1);
         pda.add_reduction(5, 15, 1);

@@ -1,5 +1,6 @@
 pub mod dfa;
 pub mod pda;
+pub mod error;
 mod lexical;
 mod syntactic;
 
