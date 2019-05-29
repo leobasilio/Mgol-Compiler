@@ -47,7 +47,10 @@ impl Table {
             "fim",
             "inteiro",
             "lit",
-            "real"
+            "real",
+            "enquanto",
+            "faca",
+            "fimenquanto"
         ];
 
         for &keyword in &keywords {
