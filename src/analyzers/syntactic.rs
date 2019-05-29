@@ -595,6 +595,16 @@ impl Syntactic {
             let current_column = lexical.current_column();
             let item = lexical.next_token();
 
+            if item.token.eq(symbols::tokens::ERROR) {
+
+                println!("Erro Léxico: Token \"{}\" inválido, linha {1}, coluna {2}", item.lexeme, current_line, current_column);
+
+                has_error = true;
+
+                continue;
+
+            }
+
             loop {
 
                 match self.automaton.read(&Syntactic::get_pda_lexeme(&item)) {
@@ -621,7 +631,7 @@ impl Syntactic {
 
                     Err(e) => {
 
-                        println!("{}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme);
+                        println!("Erro Sintático: {}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme);
 
                         has_error = true;
 
