@@ -16,10 +16,15 @@ fn run_compiler(filename: &str) -> Result<(), String> {
 
     }
 
-    syntatic.run(&mut lexical)?;
+    match syntatic.run(&mut lexical) {
 
-    println!("Aceitou!");
+        Ok(true) => println!("Aceitou!"),
 
+        Ok(false) => println!("Não aceitou!"),
+
+        Err(e) => println!("{}", e)
+
+    }
 
     /*loop {
 

@@ -585,7 +585,9 @@ impl Syntactic {
 
     }
 
-    pub fn run(&mut self, lexical: &mut Lexical) -> Result<(), String>{
+    pub fn run(&mut self, lexical: &mut Lexical) -> Result<bool, String> {
+
+        let mut has_error = false;
 
         loop {
 
@@ -593,27 +595,39 @@ impl Syntactic {
             let current_column = lexical.current_column();
             let item = lexical.next_token();
 
-            match self.automaton.read(&Syntactic::get_pda_lexeme(&item)) {
+            loop {
 
-                Ok(accepted) => {
+                match self.automaton.read(&Syntactic::get_pda_lexeme(&item)) {
 
-                    if item.token.eq(symbols::tokens::EOF) {
+                    Ok(accepted) => {
 
-                        if accepted {
+                        if item.token.eq(symbols::tokens::EOF) {
 
-                            return Ok(());
+                            if accepted {
 
-                        }else {
+                                return Ok(!has_error);
 
-                            return Err("Final inesperado do arquivo".to_string());
+                            }else {
+
+                                return Err("Final inesperado do arquivo".to_string());
+
+                            }
 
                         }
 
+                        break;
+
+                    },
+
+                    Err(e) => {
+
+                        println!("{}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme);
+
+                        has_error = true;
+
                     }
 
-                },
-
-                Err(e) => return Err(format!("{}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme))
+                }
 
             }
 

@@ -42,7 +42,9 @@ pub struct PDA {
     follows: HashMap<String, Vec<String>>,
 
     // state -> State
-    reductions: HashMap<i8, Reduction>
+    reductions: HashMap<i8, Reduction>,
+
+    panicking: Vec<String>
 
 }
 
@@ -56,7 +58,8 @@ impl PDA {
             gotos: HashMap::new(),
             rules: HashMap::new(),
             follows: HashMap::new(),
-            reductions: HashMap::new()
+            reductions: HashMap::new(),
+            panicking: vec![]
         }
 
     }
@@ -100,43 +103,45 @@ impl PDA {
 
     }
 
-    pub fn read(&mut self, lexeme: &String) -> Result<bool, String>{
+    pub fn read(&mut self, lexeme: &String) -> Result<bool, String> {
 
         loop {
 
-            if let Some(&current_state) = self.stack.last() {
+            if !self.panicking.is_empty() {
+
+                if self.panicking.contains(lexeme) {
+
+                    self.panicking.clear();
+
+                }else{
+
+                    return Ok(false);
+
+                }
+
+            }else if let Some(&current_state) = self.stack.last() {
 
                 if let Some(&action) = self.actions.get(&(current_state, lexeme.clone())) {
 
-                    match action.method {
+                    if let Some(accepted) = self.action_run(current_state, &action) {
 
-                        ActionMethod::SHIFT => {
-
-                            self.shift(action.param);
-
-                            return Ok(false);
-
-                        },
-
-                        ActionMethod::REDUCE => {
-
-                            if let Err(e) = self.reduce(current_state) {
-
-                                return Err(e);
-
-                            }
-
-                        },
-
-                        ActionMethod::ACCEPT => return Ok(true)
+                        return Ok(accepted);
 
                     }
 
                 }else{
 
-                    self.error(current_state, lexeme);
+                    if let Some(e) = self.error(current_state) {
+
+                        return Err(e);
+
+                    }
 
                 }
+
+            }else{
+
+                panic!("Sem estado atual");
 
             }
 
@@ -144,13 +149,39 @@ impl PDA {
 
     }
 
-    fn shift(&mut self, new_state: i8){
+    fn action_run(&mut self, current_state: i8, action: &Action) -> Option<bool> {
+
+        match action.method {
+
+            ActionMethod::SHIFT => {
+
+                self.action_shift(action.param);
+
+                Some(false)
+
+            },
+
+            ActionMethod::REDUCE => {
+
+                self.action_reduce(current_state, false);
+
+                None
+
+            },
+
+            ActionMethod::ACCEPT => Some(true)
+
+        }
+
+    }
+
+    fn action_shift(&mut self, new_state: i8){
 
         self.stack.push(new_state);
 
     }
 
-    fn reduce(&mut self, current_state: i8) -> Result<(), String> {
+    fn action_reduce(&mut self, current_state: i8, panic_mode: bool){
 
         if let Some(reduction) = self.reductions.get(&current_state) {
 
@@ -162,52 +193,81 @@ impl PDA {
 
                 }
 
+                if panic_mode {
+
+                    if let Some(follow) = self.follows.get(&rule.left_side) {
+
+                        self.panicking = follow.clone();
+
+                    }else{
+
+                        panic!("Follow não encontrado [{}]", rule.left_side);
+
+                    }
+
+                }
+
                 if let Some(&current_state) = self.stack.last() {
 
                     if let Some(&new_state) = self.gotos.get(&(current_state, rule.left_side.to_string())) {
 
                         self.stack.push(new_state);
 
-                        return Ok(())
+                        //println!("{} -> {} [{},{}]", rule.left_side, rule.right_side, current_state, new_state);
 
                     }else{
 
-                        return Err(format!("Desvio não encontrado [{},{}]", current_state, rule.left_side));
+                        panic!("Desvio não encontrado [{},{}]", current_state, rule.left_side);
 
                     }
 
                 }else{
 
-                    return Err(format!("Pilha vazia na redução [{},{}]", reduction.pop_count, rule.left_side));
+                    panic!("Pilha vazia na redução [{},{}]", reduction.pop_count, rule.left_side);
 
                 }
 
             }else{
 
-                return Err(format!("Regra não encontrada [{}]", reduction.rule_nr));
+                panic!("Regra não encontrada [{}]", reduction.rule_nr);
 
             }
 
         }else{
 
-            return Err(format!("Redução não encontrada [{}]", current_state));
+            panic!("Redução não encontrada [{}]", current_state);
 
         }
 
     }
 
-    fn error(&mut self, current_state: i8, lexeme: &String){
+    fn error(&mut self, current_state: i8) -> Option<String> {
 
-        let actions : Vec<&String> = self.actions.keys()
+        let terminals: Vec<String> = self.actions.keys()
                                                  .filter(|(state, _)| *state == current_state)
-                                                 .map(|(_, terminal)| terminal)
+                                                 .map(|(_, terminal)| terminal.clone())
                                                  .collect();
 
-        if actions.len() == 1 {
+        if terminals.len() == 1 {
 
+            let terminal = terminals.first().unwrap();
+            let action = self.actions.get(&(current_state, terminal.to_string())).unwrap().clone();
 
+            if let Some(_) = self.action_run(current_state, &action) {
+
+                return Some(format!("Esperado \"{}\"", terminal));
+
+            }else{
+
+                return None;
+
+            }
 
         }else{
+
+            self.action_reduce(current_state, true);
+
+            return Some(format!("Esperado \"{}\"", terminals.join("\", \"")));
 
         }
 
