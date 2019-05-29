@@ -47,6 +47,7 @@ pub struct PDA {
 
     panicking: Vec<String>,
 
+    // Temporário
     current_lexeme: String
 
 }
@@ -163,6 +164,26 @@ impl PDA {
 
     }
 
+    fn panic_follow(&self, current_state: i8) -> Vec<String> {
+
+        if let Some(reduction) = self.reductions.get(&current_state) {
+
+            if let Some(rule) = self.rules.get(&reduction.rule_nr) {
+
+                if let Some(follow) = self.follows.get(&rule.left_side){
+
+                    return follow.clone();
+
+                }
+
+            }
+
+        }
+
+        panic!("Panic sem follow");
+
+    }
+
     fn action_run(&mut self, current_state: i8, action: &Action) -> Option<bool> {
 
         match action.method {
@@ -177,7 +198,7 @@ impl PDA {
 
             ActionMethod::REDUCE => {
 
-                self.action_reduce(current_state, false);
+                self.action_reduce(current_state);
 
                 None
 
@@ -197,7 +218,7 @@ impl PDA {
 
     }
 
-    fn action_reduce(&mut self, current_state: i8, panic_mode: bool){
+    fn action_reduce(&mut self, current_state: i8){
 
         if let Some(reduction) = self.reductions.get(&current_state) {
 
@@ -208,20 +229,6 @@ impl PDA {
                 for _ in 0..reduction.pop_count {
 
                     self.stack.pop();
-
-                }
-
-                if panic_mode {
-
-                    if let Some(follow) = self.follows.get(&rule.left_side) {
-
-                        self.panicking = follow.clone();
-
-                    }else{
-
-                        panic!("Follow não encontrado [{}]", rule.left_side);
-
-                    }
 
                 }
 
@@ -281,7 +288,9 @@ impl PDA {
 
         }else{
 
-            self.action_reduce(current_state, true);
+            self.panicking = self.panic_follow(current_state);
+
+            self.action_reduce(current_state);
 
         }
 
@@ -290,7 +299,6 @@ impl PDA {
     }
 
     // Temporário
-
     fn print_push(&self){
 
         let current_state = self.stack.last().unwrap();
@@ -305,6 +313,7 @@ impl PDA {
 
     }
 
+    // Temporário
     fn print_pop(&self){
 
         let current_state = self.stack.last().unwrap();
@@ -321,6 +330,7 @@ impl PDA {
 
     }
 
+    // Temporário
     fn print_error(&self){
 
         let current_state = self.stack.last().unwrap();
