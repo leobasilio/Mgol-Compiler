@@ -1,5 +1,8 @@
+use symbols;
 use std::collections::HashMap;
 use analyzers::error::PdaError;
+use analyzers::Semantic;
+use analyzers::semantic::ReductionHandler;
 
 #[derive(Clone,Copy)]
 pub enum ActionMethod {
@@ -17,7 +20,8 @@ struct Action {
 #[derive(Clone)]
 struct Rule {
     left_side: String,
-    right_side: String
+    right_side: String,
+    handler: Option<ReductionHandler>
 }
 
 #[derive(Clone)]
@@ -29,6 +33,9 @@ struct Reduction {
 pub struct PDA {
 
     stack: Vec<i8>,
+
+    // pilha de tokens
+    t_stack: Vec<symbols::Symbol>,
 
     // (state,terminal) -> action
     actions: HashMap<(i8, String), Action>,
@@ -45,22 +52,26 @@ pub struct PDA {
     // state -> Reduction
     reductions: HashMap<i8, Reduction>,
 
-    panicking: Vec<String>
+    panicking: Vec<String>,
+
+    semantic: Semantic
 
 }
 
 impl PDA {
 
-    pub fn new() -> Self {
+    pub fn new(semantic: Semantic) -> Self {
 
         PDA {
             stack: vec![0],
+            t_stack: vec![],
             actions: HashMap::new(),
             gotos: HashMap::new(),
             rules: HashMap::new(),
             follows: HashMap::new(),
             reductions: HashMap::new(),
-            panicking: vec![]
+            panicking: vec![],
+            semantic
         }
 
     }
@@ -80,11 +91,12 @@ impl PDA {
 
     }
 
-    pub fn add_rule(&mut self, rule_nr: i8, left_side: &str, right_side: &str){
+    pub fn add_rule(&mut self, rule_nr: i8, left_side: &str, right_side: &str, handler: Option<ReductionHandler>){
 
         self.rules.insert(rule_nr, Rule {
             left_side: left_side.to_string(),
-            right_side: right_side.to_string()
+            right_side: right_side.to_string(),
+            handler
         });
 
     }
@@ -104,9 +116,11 @@ impl PDA {
 
     }
 
-    pub fn read(&mut self, lexeme: &str) -> Result<bool, PdaError> {
+    pub fn read(&mut self, token: &symbols::Symbol) -> Result<bool, PdaError> {
 
-        if self.panic_discard(lexeme) {
+        let lexeme = PDA::get_lexeme(token);
+
+        if self.panic_discard(&lexeme) {
 
             return Ok(false);
 
@@ -118,13 +132,13 @@ impl PDA {
 
                 if let Some(&action) = self.actions.get(&(current_state, lexeme.to_string())) {
 
-                    if let Some(accepted) = self.action_run(current_state, &action) {
+                    if let Some(accepted) = self.action_run(current_state, &action, token) {
 
                         return Ok(accepted);
 
                     }
 
-                }else if let Some(e) = self.error(current_state) {
+                }else if let Some(e) = self.error(current_state, token) {
 
                     return Err(e);
 
@@ -178,13 +192,13 @@ impl PDA {
 
     }
 
-    fn action_run(&mut self, current_state: i8, action: &Action) -> Option<bool> {
+    fn action_run(&mut self, current_state: i8, action: &Action, token: &symbols::Symbol) -> Option<bool> {
 
         match action.method {
 
             ActionMethod::SHIFT => {
 
-                self.action_shift(action.param);
+                self.action_shift(action.param, token);
 
                 Some(false)
 
@@ -204,9 +218,10 @@ impl PDA {
 
     }
 
-    fn action_shift(&mut self, new_state: i8){
+    fn action_shift(&mut self, new_state: i8, token: &symbols::Symbol){
 
         self.stack.push(new_state);
+        self.t_stack.push(token.clone());
 
     }
 
@@ -216,15 +231,35 @@ impl PDA {
 
             if let Some(rule) = self.rules.get(&reduction.rule_nr) {
 
+                let mut tokens: Vec<symbols::Symbol> = vec![];
+
                 for _ in 0..reduction.pop_count {
 
                     self.stack.pop();
+
+                    if let Some(item) = self.t_stack.pop() {
+
+                        tokens.insert(0, item);
+
+                    }
 
                 }
 
                 if let Some(&current_state) = self.stack.last() {
 
                     if let Some(&new_state) = self.gotos.get(&(current_state, rule.left_side.to_string())) {
+
+                        if let Some(handler) = rule.handler {
+
+                            let new_token = handler(&mut self.semantic, &tokens);
+
+                            self.t_stack.push(new_token);
+
+                        }else{
+
+                            self.t_stack.push(self.semantic.null());
+
+                        }
 
                         self.stack.push(new_state);
 
@@ -254,7 +289,7 @@ impl PDA {
 
     }
 
-    fn error(&mut self, current_state: i8) -> Option<PdaError> {
+    fn error(&mut self, current_state: i8, token: &symbols::Symbol) -> Option<PdaError> {
 
         let terminals: Vec<String> = self.actions.keys()
                                                  .filter(|(state, _)| *state == current_state)
@@ -266,7 +301,7 @@ impl PDA {
             let terminal = terminals.first().unwrap();
             let action = self.actions.get(&(current_state, terminal.to_string())).unwrap().clone();
 
-            if self.action_run(current_state, &action) == None {
+            if self.action_run(current_state, &action, token) == None {
 
                 return None;
 
@@ -281,6 +316,32 @@ impl PDA {
         }
 
         return Some(PdaError::new(terminals));
+
+    }
+
+    fn get_lexeme(item: &symbols::Symbol) -> String {
+
+        match item.token {
+
+            symbols::tokens::EOF => String::from(""),
+
+            symbols::tokens::IDENTIFIER => String::from("id"),
+
+            symbols::tokens::LITERAL => String::from("literal"),
+
+            symbols::tokens::ARITHMETIC => String::from("opm"),
+
+            symbols::tokens::RELATIONAL => String::from("opr"),
+
+            symbols::tokens::NUMBER => String::from("num"),
+
+            symbols::tokens::ATTRIBUTION => String::from("rcb"),
+
+            "inteiro" => String::from("int"),
+
+            _ => item.lexeme.clone()
+
+        }
 
     }
 

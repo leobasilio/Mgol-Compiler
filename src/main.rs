@@ -8,7 +8,6 @@ fn run_compiler(filename: &str) -> Result<(), String> {
 
     let mut table = symbols::Table::new();
     let mut lexical = analyzers::Lexical::new(&mut table);
-    let mut syntatic = analyzers::Syntactic::new();
 
     if let Err(e) = lexical.load(filename) {
 
@@ -16,7 +15,9 @@ fn run_compiler(filename: &str) -> Result<(), String> {
 
     }
 
-    match syntatic.run(&mut lexical) {
+    let mut syntatic = analyzers::Syntactic::new(&mut lexical);
+
+    match syntatic.run() {
 
         Ok(true) => println!("Aceitou!"),
 

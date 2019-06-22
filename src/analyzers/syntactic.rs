@@ -1,57 +1,59 @@
 use symbols;
 use analyzers::Lexical;
+use analyzers::Semantic;
 use analyzers::pda::PDA;
 use analyzers::pda::ActionMethod;
 
-pub struct Syntactic {
-    automaton: PDA
+pub struct Syntactic<'a> {
+    automaton: PDA,
+    lexical: &'a mut Lexical<'a>
 }
 
-impl Syntactic {
+impl<'a> Syntactic<'a> {
 
-    pub fn new() -> Self {
+    pub fn new(lexical: &'a mut Lexical<'a>) -> Self {
 
-        let mut pda = PDA::new();
+        let mut pda = PDA::new(Semantic::new());
 
-        pda.add_rule(0, "P'", "P");
-        pda.add_rule(1, "P", "inicio V A");
-        pda.add_rule(2, "V", "varinicio LV");
-        pda.add_rule(3, "LV", "D LV");
-        pda.add_rule(4, "LV", "varfim ;");
-        pda.add_rule(5, "D", "id TIPO ;");
-        pda.add_rule(6, "TIPO", "int");
-        pda.add_rule(7, "TIPO", "real");
-        pda.add_rule(8, "TIPO", "lit");
-        pda.add_rule(9, "A", "ES A");
-        pda.add_rule(10, "ES", "leia id ;");
-        pda.add_rule(11, "ES", "escreva ARG ;");
-        pda.add_rule(12, "ARG", "literal");
-        pda.add_rule(13, "ARG", "num");
-        pda.add_rule(14, "ARG", "id");
-        pda.add_rule(15, "A", "CMD A");
-        pda.add_rule(16, "CMD", "id rcb LD ;");
-        pda.add_rule(17, "LD", "OPRD opm OPRD");
-        pda.add_rule(18, "LD", "OPRD");
-        pda.add_rule(19, "OPRD", "id");
-        pda.add_rule(20, "OPRD", "num");
-        pda.add_rule(21, "A", "COND A");
-        pda.add_rule(22, "COND", "CABEÇALHO CORPO");
-        pda.add_rule(23, "CABEÇALHO", "se ( EXP_R ) então");
-        pda.add_rule(24, "EXP_R", "OPRD opr OPRD");
-        pda.add_rule(25, "CORPO", "ES CORPO");
-        pda.add_rule(26, "CORPO", "CMD CORPO");
-        pda.add_rule(27, "CORPO", "COND CORPO");
-        pda.add_rule(28, "CORPO", "REP CORPO");
-        pda.add_rule(29, "CORPO", "fimse");
-        pda.add_rule(30, "A", "REP A");
-        pda.add_rule(31, "REP", "CABEÇALHOREP CORPOREP");
-        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faca");
-        pda.add_rule(33, "CORPOREP", "ES CORPOREP");
-        pda.add_rule(34, "CORPOREP", "CMD CORPOREP");
-        pda.add_rule(35, "CORPOREP", "COND CORPOREP");
-        pda.add_rule(36, "CORPOREP", "REP CORPOREP");
-        pda.add_rule(37, "CORPOREP", "fimenquanto");
-        pda.add_rule(38, "A", "fim");
+        pda.add_rule(0, "P'", "P", None);
+        pda.add_rule(1, "P", "inicio V A", None);
+        pda.add_rule(2, "V", "varinicio LV", None);
+        pda.add_rule(3, "LV", "D LV", None);
+        pda.add_rule(4, "LV", "varfim ;", None);
+        pda.add_rule(5, "D", "id TIPO ;", Some(Semantic::handle_var_decl));
+        pda.add_rule(6, "TIPO", "int", Some(Semantic::handle_type));
+        pda.add_rule(7, "TIPO", "real", Some(Semantic::handle_type));
+        pda.add_rule(8, "TIPO", "lit", Some(Semantic::handle_type));
+        pda.add_rule(9, "A", "ES A", None);
+        pda.add_rule(10, "ES", "leia id ;", Some(Semantic::handle_input));
+        pda.add_rule(11, "ES", "escreva ARG ;", None);
+        pda.add_rule(12, "ARG", "literal", None);
+        pda.add_rule(13, "ARG", "num", None);
+        pda.add_rule(14, "ARG", "id", None);
+        pda.add_rule(15, "A", "CMD A", None);
+        pda.add_rule(16, "CMD", "id rcb LD ;", None);
+        pda.add_rule(17, "LD", "OPRD opm OPRD", None);
+        pda.add_rule(18, "LD", "OPRD", None);
+        pda.add_rule(19, "OPRD", "id", None);
+        pda.add_rule(20, "OPRD", "num", None);
+        pda.add_rule(21, "A", "COND A", None);
+        pda.add_rule(22, "COND", "CABEÇALHO CORPO", None);
+        pda.add_rule(23, "CABEÇALHO", "se ( EXP_R ) então", None);
+        pda.add_rule(24, "EXP_R", "OPRD opr OPRD", None);
+        pda.add_rule(25, "CORPO", "ES CORPO", None);
+        pda.add_rule(26, "CORPO", "CMD CORPO", None);
+        pda.add_rule(27, "CORPO", "COND CORPO", None);
+        pda.add_rule(28, "CORPO", "REP CORPO", None);
+        pda.add_rule(29, "CORPO", "fimse", None);
+        pda.add_rule(30, "A", "REP A", None);
+        pda.add_rule(31, "REP", "CABEÇALHOREP CORPOREP", None);
+        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faca", None);
+        pda.add_rule(33, "CORPOREP", "ES CORPOREP", None);
+        pda.add_rule(34, "CORPOREP", "CMD CORPOREP", None);
+        pda.add_rule(35, "CORPOREP", "COND CORPOREP", None);
+        pda.add_rule(36, "CORPOREP", "REP CORPOREP", None);
+        pda.add_rule(37, "CORPOREP", "fimenquanto", None);
+        pda.add_rule(38, "A", "fim", None);
 
         pda.add_follow("P'", &[""]);
         pda.add_follow("P", &[""]);
@@ -580,20 +582,21 @@ impl Syntactic {
         pda.add_reduction(78, 5, 3);
 
         Syntactic {
-            automaton: pda
+            automaton: pda,
+            lexical
         }
 
     }
 
-    pub fn run(&mut self, lexical: &mut Lexical) -> Result<bool, String> {
+    pub fn run(&mut self) -> Result<bool, String> {
 
         let mut has_error = false;
 
         loop {
 
-            let current_line = lexical.current_line();
-            let current_column = lexical.current_column();
-            let item = lexical.next_token();
+            let current_line = self.lexical.current_line();
+            let current_column = self.lexical.current_column();
+            let item = self.lexical.next_token();
 
             if item.token.eq(symbols::tokens::ERROR) {
 
@@ -607,7 +610,7 @@ impl Syntactic {
 
             loop {
 
-                match self.automaton.read(&Syntactic::get_pda_lexeme(&item)) {
+                match self.automaton.read(&item) {
 
                     Ok(accepted) => {
 
@@ -640,32 +643,6 @@ impl Syntactic {
                 }
 
             }
-
-        }
-
-    }
-
-    fn get_pda_lexeme(item: &symbols::Symbol) -> String {
-
-        match item.token.as_ref() {
-
-            symbols::tokens::EOF => String::from(""),
-
-            symbols::tokens::IDENTIFIER => String::from("id"),
-
-            symbols::tokens::LITERAL => String::from("literal"),
-
-            symbols::tokens::ARITHMETIC => String::from("opm"),
-
-            symbols::tokens::RELATIONAL => String::from("opr"),
-
-            symbols::tokens::NUMBER => String::from("num"),
-
-            symbols::tokens::ATTRIBUTION => String::from("rcb"),
-
-            "inteiro" => String::from("int"),
-
-            _ => item.lexeme.clone()
 
         }
 

@@ -167,7 +167,7 @@ impl<'a> Lexical<'a> {
 
                     if class == tokens::IDENTIFIER {
 
-                        return self.table.insert(&lexeme, class);
+                        return self.table.insert(&lexeme, class).clone();
 
                     }else{
 

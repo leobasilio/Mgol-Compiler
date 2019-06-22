@@ -18,18 +18,26 @@ pub mod tokens {
 
 }
 
+pub mod types {
+
+    pub const INTEGER: &str = "inteiro";
+    pub const REAL: &str = "real";
+    pub const LITERAL: &str = "literal";
+
+}
+
 #[derive(Clone)]
 pub struct Symbol {
     pub lexeme: String,
-    pub token: String,
-    pub data_type: Option<String>
+    pub token: &'static str,
+    pub data_type: Option<&'static str>
 }
 
 pub struct Table {
     symbols: HashMap<String, Symbol>
 }
 
-impl Table {
+impl<'a> Table {
 
     pub fn new() -> Self {
 
@@ -55,7 +63,7 @@ impl Table {
 
         for &keyword in &keywords {
 
-            symbols.insert(String::from(keyword), Table::make_symbol(keyword, keyword));
+            symbols.insert(String::from(keyword), Table::make_symbol(&keyword, &keyword));
 
         }
 
@@ -65,7 +73,7 @@ impl Table {
 
     }
 
-    pub fn insert(&mut self, lexeme: &str, token: &str) -> Symbol {
+    pub fn insert(&'a mut self, lexeme: &str, token: &'static str) -> &'a Symbol {
 
         let key = String::from(lexeme);
 
@@ -75,14 +83,14 @@ impl Table {
 
         }
 
-        return self.symbols.get(&key).unwrap().clone();
+        return self.symbols.get(&key).unwrap();
 
     }
 
-    pub fn make_symbol(lexeme: &str, token: &str) -> Symbol{
+    pub fn make_symbol(lexeme: &str, token: &'static str) -> Symbol {
         Symbol {
             lexeme: String::from(lexeme),
-            token: String::from(token),
+            token: token,
             data_type: None
         }
     }
