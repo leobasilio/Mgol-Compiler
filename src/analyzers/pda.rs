@@ -45,10 +45,7 @@ pub struct PDA {
     // state -> Reduction
     reductions: HashMap<i8, Reduction>,
 
-    panicking: Vec<String>,
-
-    // Temporário
-    current_lexeme: String
+    panicking: Vec<String>
 
 }
 
@@ -63,8 +60,7 @@ impl PDA {
             rules: HashMap::new(),
             follows: HashMap::new(),
             reductions: HashMap::new(),
-            panicking: vec![],
-            current_lexeme: String::from("")
+            panicking: vec![]
         }
 
     }
@@ -115,8 +111,6 @@ impl PDA {
             return Ok(false);
 
         }
-
-        self.current_lexeme = lexeme.to_string();
 
         loop {
 
@@ -214,8 +208,6 @@ impl PDA {
 
         self.stack.push(new_state);
 
-        self.print_push();
-
     }
 
     fn action_reduce(&mut self, current_state: i8){
@@ -223,8 +215,6 @@ impl PDA {
         if let Some(reduction) = self.reductions.get(&current_state) {
 
             if let Some(rule) = self.rules.get(&reduction.rule_nr) {
-
-                self.print_pop();
 
                 for _ in 0..reduction.pop_count {
 
@@ -237,8 +227,6 @@ impl PDA {
                     if let Some(&new_state) = self.gotos.get(&(current_state, rule.left_side.to_string())) {
 
                         self.stack.push(new_state);
-
-                        self.print_push();
 
                     }else{
 
@@ -273,8 +261,6 @@ impl PDA {
                                                  .map(|(_, terminal)| terminal.clone())
                                                  .collect();
 
-        self.print_error();
-
         if terminals.len() == 1 {
 
             let terminal = terminals.first().unwrap();
@@ -295,47 +281,6 @@ impl PDA {
         }
 
         return Some(PdaError::new(terminals));
-
-    }
-
-    // Temporário
-    fn print_push(&self){
-
-        let current_state = self.stack.last().unwrap();
-        let reduction = self.reductions.get(current_state).unwrap();
-        let rule = self.rules.get(&reduction.rule_nr).unwrap();
-
-        let mut symbols: Vec<&str> = rule.right_side.split(' ').collect();
-
-        symbols.insert(reduction.pop_count as usize, ".");
-
-        println!("\x1B[0;32m{4:15} [{3:2}] {0:>2$} -> {1}\x1B[0m", rule.left_side, symbols.join(" "), self.stack.len() + rule.left_side.len(), current_state, self.current_lexeme);
-
-    }
-
-    // Temporário
-    fn print_pop(&self){
-
-        let current_state = self.stack.last().unwrap();
-        let reduction = self.reductions.get(current_state).unwrap();
-        let rule = self.rules.get(&reduction.rule_nr).unwrap();
-
-        let mut symbols: Vec<&str> = rule.right_side.split(' ').collect();
-
-        symbols.insert(reduction.pop_count as usize, ".");
-
-        let left_side = symbols.join(" ");
-
-        println!("\x1B[0;31m{4:15} [{3:2}] {1:>2$} -> {0}\x1B[0m", rule.left_side, left_side, self.stack.len() + left_side.len(), current_state, self.current_lexeme);
-
-    }
-
-    // Temporário
-    fn print_error(&self){
-
-        let current_state = self.stack.last().unwrap();
-
-        println!("\x1B[0;33m{0:15} [{1:2}] {2:>3$} \x1B[0m", self.current_lexeme, current_state, "ERRO", self.stack.len()+4);
 
     }
 
