@@ -3,15 +3,17 @@ use analyzers::Lexical;
 use analyzers::Semantic;
 use analyzers::pda::PDA;
 use analyzers::pda::ActionMethod;
+use analyzers::error::CompilerError;
+use analyzers::error::LexicalError;
+use analyzers::error::EndOfFileError;
 
-pub struct Syntactic<'a> {
-    automaton: PDA,
-    lexical: &'a mut Lexical<'a>
+pub struct Syntactic {
+    automaton: PDA
 }
 
-impl<'a> Syntactic<'a> {
+impl Syntactic {
 
-    pub fn new(lexical: &'a mut Lexical<'a>) -> Self {
+    pub fn new() -> Self {
 
         let mut pda = PDA::new(Semantic::new());
 
@@ -582,28 +584,30 @@ impl<'a> Syntactic<'a> {
         pda.add_reduction(78, 5, 3);
 
         Syntactic {
-            automaton: pda,
-            lexical
+            automaton: pda
         }
 
     }
 
-    pub fn run(&mut self) -> Result<bool, String> {
+    pub fn run(&mut self, lexical: &mut Lexical, output_file: &str) -> Result<(), Vec<CompilerError>> {
 
-        let mut has_error = false;
+        let mut errors: Vec<CompilerError> = vec![];
+
+        self.automaton.reset();
 
         loop {
 
-            let current_line = self.lexical.current_line();
-            let current_column = self.lexical.current_column();
-            let item = self.lexical.next_token();
+            let current_line = lexical.current_line();
+            let current_column = lexical.current_column();
+            let item = lexical.next_token();
             let item_ref = item.borrow();
 
             if item_ref.token.eq(symbols::tokens::ERROR) {
 
-                println!("Erro Léxico: Token \"{}\" inválido, linha {1}, coluna {2}", item_ref.lexeme, current_line, current_column);
-
-                has_error = true;
+                errors.push(CompilerError::new(
+                    Box::new(LexicalError::new(&item_ref.lexeme)),
+                    current_line,
+                    current_column));
 
                 continue;
 
@@ -611,21 +615,42 @@ impl<'a> Syntactic<'a> {
 
             loop {
 
-                match self.automaton.read(&item) {
+                let (result, semantic_errors) = self.automaton.read(&item);
+
+                for e in semantic_errors {
+
+                    errors.push(CompilerError::new(Box::new(e), current_line, current_column));
+
+                }
+
+                match result {
 
                     Ok(accepted) => {
 
                         if item_ref.token.eq(symbols::tokens::EOF) {
 
-                            if accepted {
+                            if !accepted {
 
-                                return Ok(!has_error);
+                                errors.push(CompilerError::new(
+                                    Box::new(EndOfFileError{}),
+                                    current_line,
+                                    current_column));
 
-                            }else {
+                            }else if errors.is_empty() {
 
-                                return Err("Final inesperado do arquivo".to_string());
+                                if let Err(e) = self.automaton.semantic().dump(output_file) {
+
+                                    errors.push(CompilerError::new(Box::new(e), current_line, current_column));
+
+                                }else{
+
+                                    return Ok(());
+
+                                }
 
                             }
+
+                            return Err(errors);
 
                         }
 
@@ -633,13 +658,7 @@ impl<'a> Syntactic<'a> {
 
                     },
 
-                    Err(e) => {
-
-                        println!("Erro Sintático: {}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item_ref.lexeme);
-
-                        has_error = true;
-
-                    }
+                    Err(e) => errors.push(CompilerError::new(Box::new(e), current_line, current_column))
 
                 }
 

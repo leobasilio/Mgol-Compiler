@@ -152,11 +152,11 @@ impl<'a> Lexical<'a> {
 
             if count_read == 0 {
 
-                return symbols::Table::make_symbol("", tokens::EOF);
+                return symbols::Table::make_symbol("", tokens::EOF, None);
 
             }else if count_accepted == 0 {
 
-                return symbols::Table::make_symbol(&self.extract_lexeme(count_read), tokens::ERROR);
+                return symbols::Table::make_symbol(&self.extract_lexeme(count_read), tokens::ERROR, None);
 
             } else {
 
@@ -171,7 +171,7 @@ impl<'a> Lexical<'a> {
 
                     }else{
 
-                        return symbols::Table::make_symbol(&lexeme, class);
+                        return symbols::Table::make_symbol(&lexeme, class, None);
 
                     }
 

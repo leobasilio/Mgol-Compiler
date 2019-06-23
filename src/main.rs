@@ -2,32 +2,38 @@ mod symbols;
 mod analyzers;
 
 use std::env;
-use std::error::Error;
 
-fn run_compiler(filename: &str) -> Result<(), String> {
+fn run_compiler(input_file: &str) {
 
     let mut table = symbols::Table::new();
     let mut lexical = analyzers::Lexical::new(&mut table);
 
-    if let Err(e) = lexical.load(filename) {
+    if let Err(e) = lexical.load(input_file) {
 
-        return Err(e.description().to_string());
+        println!("{}", e);
+
+    }else{
+
+        let mut syntatic = analyzers::Syntactic::new();
+        let output_file = [input_file, ".c"].concat();
+
+        match syntatic.run(&mut lexical, &output_file) {
+
+            Ok(()) => println!("Pronto!"),
+
+            Err(errors) => {
+
+                for e in errors {
+
+                    println!("{}\n", e);
+
+                }
+
+            }
+
+        }
 
     }
-
-    let mut syntatic = analyzers::Syntactic::new(&mut lexical);
-
-    match syntatic.run() {
-
-        Ok(true) => println!("Aceitou!"),
-
-        Ok(false) => println!("Não aceitou!"),
-
-        Err(e) => println!("{}", e)
-
-    }
-
-    Ok(())
 
 }
 
@@ -41,11 +47,7 @@ fn main(){
 
     }else{
 
-        if let Err(e) = run_compiler(&args[1]) {
-
-            println!("{}", e);
-
-        }
+        run_compiler(&args[1]);
 
     }
 

@@ -1,11 +1,10 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-use analyzers::error::SemanticError;
-use analyzers::error::SemanticErrorType;
 use symbols;
 use symbols::DataType;
 use symbols::Symbol;
 use symbols::SharedSymbol;
+use analyzers::error::SemanticError;
+use analyzers::error::SemanticErrorType;
+use std::io::Write;
 
 pub struct Semantic {
     t_counter: u32,
@@ -15,7 +14,7 @@ pub struct Semantic {
 
 pub type ReductionHandler = fn(&mut Semantic, &[SharedSymbol]) -> Result<SharedSymbol, SemanticError>;
 
-impl<'a> Semantic {
+impl Semantic {
 
     pub fn new() -> Self {
         Semantic {
@@ -23,6 +22,12 @@ impl<'a> Semantic {
             buffer: vec![],
             loop_expr: vec![]
         }
+    }
+
+    pub fn reset(&mut self){
+        self.t_counter = 0;
+        self.buffer = vec![];
+        self.loop_expr = vec![];
     }
 
     pub fn handle_type_int(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
@@ -45,12 +50,16 @@ impl<'a> Semantic {
 
     pub fn handle_var_decl(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let mut id = stack[0].borrow_mut();
-        let dtype = stack[1].borrow();
+        if stack.len() >= 2 {
 
-        self.buffer.push(format!("{} {};", dtype.lexeme, id.lexeme));
+            let mut id = stack[0].borrow_mut();
+            let dtype = stack[1].borrow();
 
-        id.data_type = dtype.data_type;
+            self.buffer.push(format!("{} {};", dtype.lexeme, id.lexeme));
+
+            id.data_type = dtype.data_type;
+
+        }
 
         Ok(Semantic::null())
 
@@ -58,15 +67,19 @@ impl<'a> Semantic {
 
     pub fn handle_es_in(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let id = stack[1].borrow();
+        if stack.len() >= 2 {
 
-        match Semantic::get_data_type(&id)? {
+            let id = stack[1].borrow();
 
-            DataType::INTEGER => self.buffer.push(format!("scanf(\"%d\", &{});", id.lexeme)),
+            match Semantic::get_data_type(&id)? {
 
-            DataType::REAL => self.buffer.push(format!("scanf(\"%lf\", &{});", id.lexeme)),
+                DataType::INTEGER => self.buffer.push(format!("scanf(\"%d\", &{});", id.lexeme)),
 
-            DataType::LITERAL => self.buffer.push(format!("scanf(\"%s\", {});", id.lexeme))
+                DataType::REAL => self.buffer.push(format!("scanf(\"%lf\", &{});", id.lexeme)),
+
+                DataType::LITERAL => self.buffer.push(format!("scanf(\"%s\", {});", id.lexeme))
+
+            }
 
         }
 
@@ -76,29 +89,33 @@ impl<'a> Semantic {
 
     pub fn handle_es_out(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let item = stack[1].borrow();
+        if stack.len() >= 2 {
 
-        match item.token {
+            let item = stack[1].borrow();
 
-            symbols::tokens::NUMBER => self.buffer.push(format!("printf(\"{}\");", item.lexeme)),
+            match item.token {
 
-            symbols::tokens::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme)),
+                symbols::tokens::NUMBER => self.buffer.push(format!("printf(\"{}\");", item.lexeme)),
 
-            symbols::tokens::IDENTIFIER => {
+                symbols::tokens::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme)),
 
-                match Semantic::get_data_type(&item)? {
+                symbols::tokens::IDENTIFIER => {
 
-                    DataType::INTEGER => self.buffer.push(format!("printf(\"%d\", {});", item.lexeme)),
+                    match Semantic::get_data_type(&item)? {
 
-                    DataType::REAL => self.buffer.push(format!("printf(\"%lf\", {});", item.lexeme)),
+                        DataType::INTEGER => self.buffer.push(format!("printf(\"%d\", {});", item.lexeme)),
 
-                    DataType::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme))
+                        DataType::REAL => self.buffer.push(format!("printf(\"%lf\", {});", item.lexeme)),
 
-                }
+                        DataType::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme))
 
-            },
+                    }
 
-            _ => panic!("handle_es_out: Token inesperado")
+                },
+
+                _ => panic!("handle_es_out: Token inesperado")
+
+            }
 
         }
 
@@ -108,87 +125,111 @@ impl<'a> Semantic {
 
     pub fn handle_arg_lit(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        Ok(stack.first().unwrap().clone())
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_arg_num(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        Ok(stack.first().unwrap().clone())
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_arg_id(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let item = stack.first().unwrap().clone();
+        if let Some(item) = stack.first() {
 
-        Semantic::get_data_type(&item.borrow())?;
+            Semantic::get_data_type(&item.borrow())?;
 
-        Ok(item)
-
-    }
-
-    pub fn handle_oprd_num(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
-
-        Ok(stack.first().unwrap().clone())
-
-    }
-
-    pub fn handle_oprd_id(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
-
-        let item = stack.first().unwrap().clone();
-
-        Semantic::get_data_type(&item.borrow())?;
-
-        Ok(item)
-
-    }
-
-    pub fn handle_cmd(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
-
-        let id = stack[0].borrow();
-        let ld = stack[2].borrow();
-        let data_type = Semantic::get_data_type(&id)?;
-
-        if data_type != DataType::LITERAL {
-
-            self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
-
-            Ok(Semantic::null())
+            Ok(item.clone())
 
         }else{
 
-            Err(SemanticError::new(SemanticErrorType::IncompatibleAssignment, ""))
+            Ok(Semantic::null())
 
         }
 
     }
 
+    pub fn handle_oprd_num(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
+
+    }
+
+    pub fn handle_oprd_id(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        if let Some(item) = stack.first() {
+
+            Semantic::get_data_type(&item.borrow())?;
+
+            Ok(item.clone())
+
+        }else{
+
+            Ok(Semantic::null())
+
+        }
+
+    }
+
+    pub fn handle_cmd(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        if stack.len() >= 3 {
+
+            let id = stack[0].borrow();
+            let ld = stack[2].borrow();
+            let data_type = Semantic::get_data_type(&id)?;
+
+            if data_type != DataType::LITERAL {
+
+                self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
+
+            }else{
+
+                return Err(SemanticError::new(SemanticErrorType::IncompatibleAssignment, ""));
+
+            }
+
+        }
+
+        Ok(Semantic::null())
+
+    }
+
     pub fn handle_ld(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        Ok(stack.first().unwrap().clone())
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_ld_opm(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let op1 = stack[0].borrow();
-        let op2 = stack[2].borrow();
-        let opm = stack[1].borrow();
+        if stack.len() >= 3 {
 
-        if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
+            let op1 = stack[0].borrow();
+            let op2 = stack[2].borrow();
+            let opm = stack[1].borrow();
 
-            let x = self.t_counter;
+            if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
 
-            self.t_counter += 1;
+                let x = self.t_counter;
 
-            self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opm.lexeme, op2.lexeme));
+                self.t_counter += 1;
 
-            Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opm.lexeme, op2.lexeme));
+
+                Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+
+            }else{
+
+                Err(SemanticError::new(SemanticErrorType::IncompatibleTypes, ""))
+
+            }
 
         }else{
 
-            Err(SemanticError::new(SemanticErrorType::IncompatibleTypes, ""))
+            Ok(Semantic::null())
 
         }
 
@@ -196,23 +237,31 @@ impl<'a> Semantic {
 
     pub fn handle_expr(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let op1 = stack[0].borrow();
-        let op2 = stack[2].borrow();
-        let opr = stack[1].borrow();
+        if stack.len() >= 3 {
 
-        if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
+            let op1 = stack[0].borrow();
+            let op2 = stack[2].borrow();
+            let opr = stack[1].borrow();
 
-            let x = self.t_counter;
+            if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
 
-            self.t_counter += 1;
+                let x = self.t_counter;
 
-            self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr.lexeme, op2.lexeme));
+                self.t_counter += 1;
 
-            Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr.lexeme, op2.lexeme));
+
+                Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+
+            }else{
+
+                Err(SemanticError::new(SemanticErrorType::IncompatibleTypes, ""))
+
+            }
 
         }else{
 
-            Err(SemanticError::new(SemanticErrorType::IncompatibleTypes, ""))
+            Ok(Semantic::null())
 
         }
 
@@ -220,9 +269,13 @@ impl<'a> Semantic {
 
     pub fn handle_if_begin(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let expr = stack[2].borrow();
+        if stack.len() >= 3 {
 
-        self.buffer.push(format!("if({}){{", expr.lexeme));
+            let expr = stack[2].borrow();
+
+            self.buffer.push(format!("if({}){{", expr.lexeme));
+
+        }
 
         Ok(Semantic::null())
 
@@ -238,11 +291,19 @@ impl<'a> Semantic {
 
     pub fn handle_while_begin(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        let expr = stack[2].borrow();
+        self.loop_expr.push(if let Some(last) = self.buffer.last() {
+            last.clone()
+        }else{
+            String::from("")
+        });
 
-        self.loop_expr.push(self.buffer.last().unwrap().to_string());
+        if stack.len() >= 3 {
 
-        self.buffer.push(format!("while({}){{", expr.lexeme));
+            let expr = stack[2].borrow();
+
+            self.buffer.push(format!("while({}){{", expr.lexeme));
+
+        }
 
         Ok(Semantic::null())
 
@@ -256,22 +317,32 @@ impl<'a> Semantic {
 
     }
 
-    pub fn dump(&mut self){
+    pub fn handle_null(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        println!("#include <stdio.h>
+        Ok(Semantic::null())
+
+    }
+
+    pub fn dump(&self, output_file: &str) -> std::io::Result<()> {
+
+        let mut f = std::fs::File::create(output_file)?;
+
+        writeln!(&mut f, "#include <stdio.h>
 typedef char literal[256];
 void main(void){{
-/*----Variaveis temporarias----*/");
+/*----Variaveis temporarias----*/")?;
 
         for i in 0..self.t_counter {
 
-            println!("int T{};", i);
+            writeln!(&mut f, "int T{};", i)?;
 
         }
 
-        println!("/*------------------------------*/
+        writeln!(&mut f, "/*------------------------------*/
 {}
-}}", self.buffer.join("\n"));
+}}", self.buffer.join("\n"))?;
+
+        Ok(())
 
     }
 
@@ -297,11 +368,7 @@ void main(void){{
 
     fn make_symbol(lexeme: &str, token: &'static str, data_type: Option<DataType>) -> SharedSymbol {
 
-        Rc::new(RefCell::new(Symbol {
-            lexeme: String::from(lexeme),
-            token: token,
-            data_type: data_type
-        }))
+        symbols::Table::make_symbol(lexeme, token, data_type)
 
     }
 

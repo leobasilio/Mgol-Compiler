@@ -65,7 +65,7 @@ impl Table {
 
         for &keyword in &keywords {
 
-            symbols.insert(String::from(keyword), Table::make_symbol(&keyword, &keyword));
+            symbols.insert(String::from(keyword), Table::make_symbol(&keyword, &keyword, None));
 
         }
 
@@ -81,7 +81,7 @@ impl Table {
 
         if !self.symbols.contains_key(&key) {
 
-            self.symbols.insert(key.clone(), Table::make_symbol(lexeme, token));
+            self.symbols.insert(key.clone(), Table::make_symbol(lexeme, token, None));
 
         }
 
@@ -89,11 +89,11 @@ impl Table {
 
     }
 
-    pub fn make_symbol(lexeme: &str, token: &'static str) -> SharedSymbol {
+    pub fn make_symbol(lexeme: &str, token: &'static str, data_type: Option<DataType>) -> SharedSymbol {
         Rc::new(RefCell::new(Symbol {
             lexeme: String::from(lexeme),
-            token: token,
-            data_type: None
+            token,
+            data_type
         }))
     }
 
