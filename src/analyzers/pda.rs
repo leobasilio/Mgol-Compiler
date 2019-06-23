@@ -35,7 +35,7 @@ pub struct PDA {
     stack: Vec<i8>,
 
     // pilha de tokens
-    t_stack: Vec<symbols::Symbol>,
+    t_stack: Vec<symbols::SharedSymbol>,
 
     // (state,terminal) -> action
     actions: HashMap<(i8, String), Action>,
@@ -116,7 +116,7 @@ impl PDA {
 
     }
 
-    pub fn read(&mut self, token: &symbols::Symbol) -> Result<bool, PdaError> {
+    pub fn read(&mut self, token: &symbols::SharedSymbol) -> Result<bool, PdaError> {
 
         let lexeme = PDA::get_lexeme(token);
 
@@ -192,7 +192,7 @@ impl PDA {
 
     }
 
-    fn action_run(&mut self, current_state: i8, action: &Action, token: &symbols::Symbol) -> Option<bool> {
+    fn action_run(&mut self, current_state: i8, action: &Action, token: &symbols::SharedSymbol) -> Option<bool> {
 
         match action.method {
 
@@ -212,13 +212,19 @@ impl PDA {
 
             },
 
-            ActionMethod::ACCEPT => Some(true)
+            ActionMethod::ACCEPT => {
+
+                self.semantic.dump();
+
+                Some(true)
+
+            }
 
         }
 
     }
 
-    fn action_shift(&mut self, new_state: i8, token: &symbols::Symbol){
+    fn action_shift(&mut self, new_state: i8, token: &symbols::SharedSymbol){
 
         self.stack.push(new_state);
         self.t_stack.push(token.clone());
@@ -231,7 +237,7 @@ impl PDA {
 
             if let Some(rule) = self.rules.get(&reduction.rule_nr) {
 
-                let mut tokens: Vec<symbols::Symbol> = vec![];
+                let mut tokens: Vec<symbols::SharedSymbol> = vec![];
 
                 for _ in 0..reduction.pop_count {
 
@@ -251,13 +257,17 @@ impl PDA {
 
                         if let Some(handler) = rule.handler {
 
-                            let new_token = handler(&mut self.semantic, &tokens);
+                            match handler(&mut self.semantic, &tokens) {
 
-                            self.t_stack.push(new_token);
+                                Ok(new_token) => self.t_stack.push(new_token),
+
+                                Err(e) => println!("{}", e)
+
+                            }
 
                         }else{
 
-                            self.t_stack.push(self.semantic.null());
+                            self.t_stack.push(Semantic::null());
 
                         }
 
@@ -289,7 +299,7 @@ impl PDA {
 
     }
 
-    fn error(&mut self, current_state: i8, token: &symbols::Symbol) -> Option<PdaError> {
+    fn error(&mut self, current_state: i8, token: &symbols::SharedSymbol) -> Option<PdaError> {
 
         let terminals: Vec<String> = self.actions.keys()
                                                  .filter(|(state, _)| *state == current_state)
@@ -319,9 +329,11 @@ impl PDA {
 
     }
 
-    fn get_lexeme(item: &symbols::Symbol) -> String {
+    fn get_lexeme(item: &symbols::SharedSymbol) -> String {
 
-        match item.token {
+        let item_ref = item.borrow();
+
+        match item_ref.token {
 
             symbols::tokens::EOF => String::from(""),
 
@@ -339,7 +351,7 @@ impl PDA {
 
             "inteiro" => String::from("int"),
 
-            _ => item.lexeme.clone()
+            _ => item_ref.lexeme.clone()
 
         }
 

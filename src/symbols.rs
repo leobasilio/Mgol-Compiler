@@ -1,4 +1,8 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub type SharedSymbol = Rc<RefCell<Symbol>>;
 
 pub mod tokens {
 
@@ -18,30 +22,28 @@ pub mod tokens {
 
 }
 
-pub mod types {
-
-    pub const INTEGER: &str = "inteiro";
-    pub const REAL: &str = "real";
-    pub const LITERAL: &str = "literal";
-
+#[derive(Copy,Clone,PartialEq)]
+pub enum DataType {
+    INTEGER,
+    REAL,
+    LITERAL
 }
 
-#[derive(Clone)]
 pub struct Symbol {
     pub lexeme: String,
     pub token: &'static str,
-    pub data_type: Option<&'static str>
+    pub data_type: Option<DataType>
 }
 
 pub struct Table {
-    symbols: HashMap<String, Symbol>
+    symbols: HashMap<String, SharedSymbol>
 }
 
-impl<'a> Table {
+impl Table {
 
     pub fn new() -> Self {
 
-        let mut symbols: HashMap<String, Symbol> = HashMap::new();
+        let mut symbols: HashMap<String, SharedSymbol> = HashMap::new();
 
         let keywords = [
             "inicio",
@@ -73,7 +75,7 @@ impl<'a> Table {
 
     }
 
-    pub fn insert(&'a mut self, lexeme: &str, token: &'static str) -> &'a Symbol {
+    pub fn insert(&mut self, lexeme: &str, token: &'static str) -> SharedSymbol {
 
         let key = String::from(lexeme);
 
@@ -83,16 +85,16 @@ impl<'a> Table {
 
         }
 
-        return self.symbols.get(&key).unwrap();
+        return self.symbols.get(&key).unwrap().clone();
 
     }
 
-    pub fn make_symbol(lexeme: &str, token: &'static str) -> Symbol {
-        Symbol {
+    pub fn make_symbol(lexeme: &str, token: &'static str) -> SharedSymbol {
+        Rc::new(RefCell::new(Symbol {
             lexeme: String::from(lexeme),
             token: token,
             data_type: None
-        }
+        }))
     }
 
 }

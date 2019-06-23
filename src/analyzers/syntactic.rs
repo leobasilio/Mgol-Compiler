@@ -21,33 +21,33 @@ impl<'a> Syntactic<'a> {
         pda.add_rule(3, "LV", "D LV", None);
         pda.add_rule(4, "LV", "varfim ;", None);
         pda.add_rule(5, "D", "id TIPO ;", Some(Semantic::handle_var_decl));
-        pda.add_rule(6, "TIPO", "int", Some(Semantic::handle_type));
-        pda.add_rule(7, "TIPO", "real", Some(Semantic::handle_type));
-        pda.add_rule(8, "TIPO", "lit", Some(Semantic::handle_type));
+        pda.add_rule(6, "TIPO", "int", Some(Semantic::handle_type_int));
+        pda.add_rule(7, "TIPO", "real", Some(Semantic::handle_type_real));
+        pda.add_rule(8, "TIPO", "lit", Some(Semantic::handle_type_lit));
         pda.add_rule(9, "A", "ES A", None);
-        pda.add_rule(10, "ES", "leia id ;", Some(Semantic::handle_input));
-        pda.add_rule(11, "ES", "escreva ARG ;", None);
-        pda.add_rule(12, "ARG", "literal", None);
-        pda.add_rule(13, "ARG", "num", None);
-        pda.add_rule(14, "ARG", "id", None);
+        pda.add_rule(10, "ES", "leia id ;", Some(Semantic::handle_es_in));
+        pda.add_rule(11, "ES", "escreva ARG ;", Some(Semantic::handle_es_out));
+        pda.add_rule(12, "ARG", "literal", Some(Semantic::handle_arg_lit));
+        pda.add_rule(13, "ARG", "num", Some(Semantic::handle_arg_num));
+        pda.add_rule(14, "ARG", "id", Some(Semantic::handle_arg_id));
         pda.add_rule(15, "A", "CMD A", None);
-        pda.add_rule(16, "CMD", "id rcb LD ;", None);
-        pda.add_rule(17, "LD", "OPRD opm OPRD", None);
-        pda.add_rule(18, "LD", "OPRD", None);
-        pda.add_rule(19, "OPRD", "id", None);
-        pda.add_rule(20, "OPRD", "num", None);
+        pda.add_rule(16, "CMD", "id rcb LD ;", Some(Semantic::handle_cmd));
+        pda.add_rule(17, "LD", "OPRD opm OPRD", Some(Semantic::handle_ld_opm));
+        pda.add_rule(18, "LD", "OPRD", Some(Semantic::handle_ld));
+        pda.add_rule(19, "OPRD", "id", Some(Semantic::handle_oprd_id));
+        pda.add_rule(20, "OPRD", "num", Some(Semantic::handle_oprd_num));
         pda.add_rule(21, "A", "COND A", None);
-        pda.add_rule(22, "COND", "CABEÇALHO CORPO", None);
-        pda.add_rule(23, "CABEÇALHO", "se ( EXP_R ) então", None);
-        pda.add_rule(24, "EXP_R", "OPRD opr OPRD", None);
+        pda.add_rule(22, "COND", "CABEÇALHO CORPO", Some(Semantic::handle_if_end));
+        pda.add_rule(23, "CABEÇALHO", "se ( EXP_R ) entao", Some(Semantic::handle_if_begin));
+        pda.add_rule(24, "EXP_R", "OPRD opr OPRD", Some(Semantic::handle_expr));
         pda.add_rule(25, "CORPO", "ES CORPO", None);
         pda.add_rule(26, "CORPO", "CMD CORPO", None);
         pda.add_rule(27, "CORPO", "COND CORPO", None);
         pda.add_rule(28, "CORPO", "REP CORPO", None);
         pda.add_rule(29, "CORPO", "fimse", None);
         pda.add_rule(30, "A", "REP A", None);
-        pda.add_rule(31, "REP", "CABEÇALHOREP CORPOREP", None);
-        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faca", None);
+        pda.add_rule(31, "REP", "CABEÇALHOREP CORPOREP", Some(Semantic::handle_while_end));
+        pda.add_rule(32, "CABEÇALHOREP", "enquanto ( EXP_R ) faca", Some(Semantic::handle_while_begin));
         pda.add_rule(33, "CORPOREP", "ES CORPOREP", None);
         pda.add_rule(34, "CORPOREP", "CMD CORPOREP", None);
         pda.add_rule(35, "CORPOREP", "COND CORPOREP", None);
@@ -597,10 +597,11 @@ impl<'a> Syntactic<'a> {
             let current_line = self.lexical.current_line();
             let current_column = self.lexical.current_column();
             let item = self.lexical.next_token();
+            let item_ref = item.borrow();
 
-            if item.token.eq(symbols::tokens::ERROR) {
+            if item_ref.token.eq(symbols::tokens::ERROR) {
 
-                println!("Erro Léxico: Token \"{}\" inválido, linha {1}, coluna {2}", item.lexeme, current_line, current_column);
+                println!("Erro Léxico: Token \"{}\" inválido, linha {1}, coluna {2}", item_ref.lexeme, current_line, current_column);
 
                 has_error = true;
 
@@ -614,7 +615,7 @@ impl<'a> Syntactic<'a> {
 
                     Ok(accepted) => {
 
-                        if item.token.eq(symbols::tokens::EOF) {
+                        if item_ref.token.eq(symbols::tokens::EOF) {
 
                             if accepted {
 
@@ -634,7 +635,7 @@ impl<'a> Syntactic<'a> {
 
                     Err(e) => {
 
-                        println!("Erro Sintático: {}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item.lexeme);
+                        println!("Erro Sintático: {}, linha {}, coluna {}, lido: {}", e, current_line, current_column, item_ref.lexeme);
 
                         has_error = true;
 

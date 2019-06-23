@@ -118,7 +118,7 @@ impl<'a> Lexical<'a> {
 
     }
 
-    pub fn next_token(&mut self) -> symbols::Symbol {
+    pub fn next_token(&mut self) -> symbols::SharedSymbol {
 
         loop {
 
@@ -167,7 +167,7 @@ impl<'a> Lexical<'a> {
 
                     if class == tokens::IDENTIFIER {
 
-                        return self.table.insert(&lexeme, class).clone();
+                        return self.table.insert(&lexeme, class);
 
                     }else{
 
