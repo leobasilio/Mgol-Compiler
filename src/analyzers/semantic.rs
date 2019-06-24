@@ -253,8 +253,9 @@ impl Semantic {
             if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
 
                 let x = self.temp.len();
+                let opr_lexeme = if opr.lexeme == "=" { "==" }else{ &opr.lexeme };
 
-                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr.lexeme, op2.lexeme));
+                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr_lexeme, op2.lexeme));
                 self.temp.push(op1.data_type.unwrap());
 
                 Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
