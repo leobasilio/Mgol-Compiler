@@ -318,7 +318,11 @@ impl Semantic {
 
     pub fn handle_while_end(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        self.buffer.push(format!("{}\n}}", self.loop_expr.pop().unwrap()));
+        if let Some(expr) = self.loop_expr.pop() {
+
+            self.buffer.push(format!("{}\n}}", expr));
+
+        }
 
         Ok(Semantic::null())
 
