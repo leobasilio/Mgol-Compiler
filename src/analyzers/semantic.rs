@@ -181,9 +181,17 @@ impl Semantic {
             let ld = stack[2].borrow();
             let data_type = Semantic::get_data_type(&id)?;
 
-            if Some(data_type) == ld.data_type && data_type != DataType::LITERAL {
+            if Some(data_type) == ld.data_type {
 
-                self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
+                if data_type == DataType::LITERAL {
+
+                    self.buffer.push(format!("sprintf({}, \"%s\", {});", id.lexeme, ld.lexeme));
+
+                }else{
+
+                    self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
+
+                }
 
             }else{
 
