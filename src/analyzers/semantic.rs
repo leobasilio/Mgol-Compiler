@@ -7,7 +7,7 @@ use analyzers::error::SemanticErrorType;
 use std::io::Write;
 
 pub struct Semantic {
-    t_counter: u32,
+    temp: Vec<DataType>,
     buffer: Vec<String>,
     loop_expr: Vec<String>
 }
@@ -18,14 +18,14 @@ impl Semantic {
 
     pub fn new() -> Self {
         Semantic {
-            t_counter: 0,
+            temp: vec![],
             buffer: vec![],
             loop_expr: vec![]
         }
     }
 
     pub fn reset(&mut self){
-        self.t_counter = 0;
+        self.temp = vec![];
         self.buffer = vec![];
         self.loop_expr = vec![];
     }
@@ -181,7 +181,7 @@ impl Semantic {
             let ld = stack[2].borrow();
             let data_type = Semantic::get_data_type(&id)?;
 
-            if data_type != DataType::LITERAL {
+            if Some(data_type) == ld.data_type && data_type != DataType::LITERAL {
 
                 self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
 
@@ -211,15 +211,14 @@ impl Semantic {
             let op2 = stack[2].borrow();
             let opm = stack[1].borrow();
 
-            if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
+            if op1.data_type == op2.data_type && op1.data_type != Some(DataType::LITERAL) {
 
-                let x = self.t_counter;
-
-                self.t_counter += 1;
+                let x = self.temp.len();
 
                 self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opm.lexeme, op2.lexeme));
+                self.temp.push(op1.data_type.unwrap());
 
-                Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+                Ok(Semantic::make_symbol(&format!("T{}", x), "", op1.data_type))
 
             }else{
 
@@ -245,11 +244,10 @@ impl Semantic {
 
             if op1.token != symbols::tokens::LITERAL && op2.token != symbols::tokens::LITERAL {
 
-                let x = self.t_counter;
-
-                self.t_counter += 1;
+                let x = self.temp.len();
 
                 self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr.lexeme, op2.lexeme));
+                self.temp.push(op1.data_type.unwrap());
 
                 Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
 
@@ -332,9 +330,17 @@ typedef char literal[256];
 void main(void){{
 /*----Variaveis temporarias----*/")?;
 
-        for i in 0..self.t_counter {
+        for (i, &x) in self.temp.iter().enumerate() {
 
-            writeln!(&mut f, "int T{};", i)?;
+            if x == DataType::REAL {
+
+                writeln!(&mut f, "double T{};", i)?;
+
+            }else{
+
+                writeln!(&mut f, "int T{};", i)?;
+
+            }
 
         }
 

@@ -171,7 +171,15 @@ impl<'a> Lexical<'a> {
 
                     }else{
 
-                        return symbols::Table::make_symbol(&lexeme, class, None);
+                        return symbols::Table::make_symbol(&lexeme, class, if class == tokens::NUMBER {
+
+                            Some(if lexeme.contains('.') {
+                                symbols::DataType::REAL
+                            }else{
+                                symbols::DataType::INTEGER
+                            })
+
+                        }else{ None });
 
                     }
 
