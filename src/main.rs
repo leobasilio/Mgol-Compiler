@@ -21,15 +21,7 @@ fn run_compiler(input_file: &str) {
 
             Ok(()) => println!("Pronto!"),
 
-            Err(errors) => {
-
-                for e in errors {
-
-                    println!("{}\n", e);
-
-                }
-
-            }
+            Err(e) => println!("\n{}\n", e)
 
         }
 

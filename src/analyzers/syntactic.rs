@@ -3,7 +3,7 @@ use analyzers::Lexical;
 use analyzers::Semantic;
 use analyzers::pda::PDA;
 use analyzers::pda::ActionMethod;
-use analyzers::error::CompilerError;
+use analyzers::error::CompilerErrors;
 use analyzers::error::LexicalError;
 use analyzers::error::EndOfFileError;
 
@@ -589,9 +589,9 @@ impl Syntactic {
 
     }
 
-    pub fn run(&mut self, lexical: &mut Lexical, output_file: &str) -> Result<(), Vec<CompilerError>> {
+    pub fn run(&mut self, lexical: &mut Lexical, output_file: &str) -> Result<(), CompilerErrors> {
 
-        let mut errors: Vec<CompilerError> = vec![];
+        let mut errors = CompilerErrors::new();
 
         self.automaton.reset();
 
@@ -604,61 +604,47 @@ impl Syntactic {
 
             if item_ref.token.eq(symbols::tokens::ERROR) {
 
-                errors.push(CompilerError::new(
-                    Box::new(LexicalError::new(&item_ref.lexeme)),
-                    current_line,
-                    current_column));
+                errors.push_ln(Box::new(LexicalError::new(&item_ref.lexeme)), current_line, current_column);
 
-                continue;
+            }else{
 
-            }
+                match self.automaton.read(&item) {
 
-            loop {
+                    Ok(true) => {
 
-                let (result, semantic_errors) = self.automaton.read(&item);
+                        if errors.is_empty() {
 
-                for e in semantic_errors {
+                            if let Err(e) = self.automaton.semantic().dump(output_file) {
 
-                    errors.push(CompilerError::new(Box::new(e), current_line, current_column));
+                                errors.push_ln(Box::new(e), current_line, current_column);
 
-                }
-
-                match result {
-
-                    Ok(accepted) => {
-
-                        if item_ref.token.eq(symbols::tokens::EOF) {
-
-                            if !accepted {
-
-                                errors.push(CompilerError::new(
-                                    Box::new(EndOfFileError{}),
-                                    current_line,
-                                    current_column));
-
-                            }else if errors.is_empty() {
-
-                                if let Err(e) = self.automaton.semantic().dump(output_file) {
-
-                                    errors.push(CompilerError::new(Box::new(e), current_line, current_column));
-
-                                }else{
-
-                                    return Ok(());
-
-                                }
+                                return Err(errors);
 
                             }
 
-                            return Err(errors);
+                            return Ok(());
 
                         }
 
-                        break;
+                        return Err(errors);
 
                     },
 
-                    Err(e) => errors.push(CompilerError::new(Box::new(e), current_line, current_column))
+                    Ok(false) => (),
+
+                    Err(e) => {
+
+                        errors.merge_ln(e, current_line, current_column)
+
+                    }
+
+                }
+
+                if item_ref.token.eq(symbols::tokens::EOF) {
+
+                    errors.push_ln(Box::new(EndOfFileError::new()), current_line, current_column);
+
+                    return Err(errors);
 
                 }
 

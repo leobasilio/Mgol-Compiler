@@ -2,6 +2,7 @@ use symbols;
 use std::collections::HashMap;
 use analyzers::error::SyntacticError;
 use analyzers::error::SemanticError;
+use analyzers::error::CompilerErrors;
 use analyzers::Semantic;
 use analyzers::semantic::ReductionHandler;
 
@@ -124,19 +125,18 @@ impl<'a> PDA {
 
     }
 
-    pub fn read(&mut self, token: &symbols::SharedSymbol) -> (Result<bool, SyntacticError>, Vec<SemanticError>) {
+    pub fn read(&mut self, token: &symbols::SharedSymbol) -> Result<bool, CompilerErrors> {
 
+        let mut errors = CompilerErrors::new();
         let lexeme = PDA::get_lexeme(token);
 
-        if self.panic_discard(&lexeme) {
-
-            return (Ok(false), vec![]);
-
-        }
-
-        let mut semantic_errors: Vec<SemanticError> = vec![];
-
         loop {
+
+            if self.panic_discard(&lexeme) {
+
+                return Ok(false);
+
+            }
 
             if let Some(&current_state) = self.stack.last() {
 
@@ -144,29 +144,29 @@ impl<'a> PDA {
 
                     match self.action_run(current_state, &action, token) {
 
-                        Ok(Some(accepted)) => return (Ok(accepted), semantic_errors),
+                        Ok(Some(accepted)) => {
 
-                        Err(e) => semantic_errors.push(e),
+                            if errors.is_empty() {
 
-                        _ => ()
+                                return Ok(accepted);
 
-                    }
+                            }else{
 
-                }else {
+                                return Err(errors);
 
-                    let (syntactic_error, semantic_error) = self.error(current_state);
+                            }
 
-                    if let Some(e) = semantic_error {
+                        },
 
-                        semantic_errors.push(e);
+                        Ok(None) => (),
 
-                    }
-
-                    if let Some(e) = syntactic_error {
-
-                        return (Err(e), semantic_errors);
+                        Err(e) => errors.push(Box::new(e))
 
                     }
+
+                }else if let Some(e) = self.error(current_state) {
+
+                    errors.push(e);
 
                 }
 
@@ -333,7 +333,7 @@ impl<'a> PDA {
 
     }
 
-    fn error(&mut self, current_state: i8) -> (Option<SyntacticError>, Option<SemanticError>) {
+    fn error(&mut self, current_state: i8) -> Option<Box<std::error::Error>> {
 
         let terminals: Vec<String> = self.actions.keys()
                                                  .filter(|(state, _)| *state == current_state)
@@ -347,11 +347,11 @@ impl<'a> PDA {
 
             match self.action_run(current_state, &action, &Semantic::null()) {
 
-                Ok(None) => (None, None),
+                Ok(None) => None,
 
-                Ok(Some(_)) => (Some(SyntacticError::new(terminals)), None),
+                Ok(Some(_)) => Some(Box::new(SyntacticError::new(terminals))),
 
-                Err(e) => (None, Some(e))
+                Err(e) => Some(Box::new(e))
 
             }
 
@@ -359,7 +359,9 @@ impl<'a> PDA {
 
             self.panicking = self.panic_follow(current_state);
 
-            (Some(SyntacticError::new(terminals)), self.action_reduce(current_state).err())
+            self.action_reduce(current_state).ok();
+
+            Some(Box::new(SyntacticError::new(terminals)))
 
         }
 

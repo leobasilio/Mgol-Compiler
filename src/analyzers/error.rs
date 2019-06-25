@@ -2,26 +2,78 @@ use std::fmt;
 use std::error::Error;
 
 #[derive(Debug)]
-pub struct CompilerError {
-    internal_error: Box<Error>,
+struct CompilerErrorItem {
+    internal: Box<Error>,
     line_number: usize,
     column_number: usize
 }
 
-impl fmt::Display for CompilerError {
+#[derive(Debug)]
+pub struct CompilerErrors {
+    errors: Vec<CompilerErrorItem>
+}
+
+impl fmt::Display for CompilerErrors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}, linha {}, coluna {}", self.internal_error, self.line_number, self.column_number)
+
+        if let Some(e) = self.errors.first() {
+
+            write!(f, "{}, linha {}, coluna {}", e.internal, e.line_number, e.column_number)?;
+
+            for e in self.errors.iter().skip(1) {
+
+                write!(f, "\n\n{}, linha {}, coluna {}", e.internal, e.line_number, e.column_number)?;
+
+            }
+
+        }
+
+        Ok(())
+
     }
 }
 
-impl CompilerError {
-    pub fn new(internal_error: Box<Error>, line_number: usize, column_number: usize) -> Self {
-        CompilerError {
-            internal_error,
-            line_number,
-            column_number
+impl CompilerErrors {
+
+    pub fn new() -> Self {
+        CompilerErrors {
+            errors: vec![]
         }
     }
+
+    pub fn is_empty(&self) -> bool{
+        return self.errors.is_empty();
+    }
+
+    pub fn push(&mut self, error: Box<Error>){
+        self.errors.push(CompilerErrorItem {
+            internal: error,
+            line_number: 0,
+            column_number: 0
+        });
+    }
+
+    pub fn push_ln(&mut self, error: Box<Error>, line_number: usize, column_number: usize){
+        self.errors.push(CompilerErrorItem {
+            internal: error,
+            line_number,
+            column_number
+        });
+    }
+
+    pub fn merge_ln(&mut self, others: CompilerErrors, line_number: usize, column_number: usize){
+
+       for mut e in others.errors {
+
+            e.line_number = line_number;
+            e.column_number = column_number;
+
+            self.errors.push(e);
+
+        }
+
+    }
+
 }
 
 //================================
@@ -126,3 +178,9 @@ impl fmt::Display for EndOfFileError {
 }
 
 impl Error for EndOfFileError {}
+
+impl EndOfFileError {
+    pub fn new() -> Self {
+        EndOfFileError{}
+    }
+}
