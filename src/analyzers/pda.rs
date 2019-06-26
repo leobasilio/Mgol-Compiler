@@ -283,6 +283,10 @@ impl<'a> PDA {
 
                     if let Some(&new_state) = self.gotos.get(&(current_state, rule.left_side.to_string())) {
 
+                        let tmp: Vec<String> = tokens.iter().map(|t| t.borrow().lexeme.clone()).collect();
+                        println!("\x1B[0;31m{} -> {}", rule.left_side, rule.right_side);
+                        println!("{} -> {}\n\x1B[0m", rule.left_side,  tmp.join(" "));
+
                         self.stack.push(new_state);
 
                         let handler = rule.handler.unwrap_or(Semantic::handle_null);

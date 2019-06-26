@@ -30,7 +30,15 @@ impl Semantic {
         self.loop_expr = vec![];
     }
 
+    fn print(s: &str){
+
+        println!("\x1B[0;32m{}\n\x1B[0m", s);
+
+    }
+
     pub fn handle_type_int(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("TIPO.tipo <- int.tipo");
 
         Ok(Semantic::make_symbol("int", "", Some(DataType::INTEGER)))
 
@@ -38,11 +46,15 @@ impl Semantic {
 
     pub fn handle_type_real(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
+        Self::print("TIPO.tipo <- real.tipo");
+
         Ok(Semantic::make_symbol("double", "", Some(DataType::REAL)))
 
     }
 
     pub fn handle_type_lit(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("TIPO.tipo <- lit.tipo");
 
         Ok(Semantic::make_symbol("literal", "", Some(DataType::LITERAL)))
 
@@ -54,6 +66,8 @@ impl Semantic {
 
             let mut id = stack[0].borrow_mut();
             let dtype = stack[1].borrow();
+
+            Self::print("id.tipo <- TIPO.tipo");
 
             self.buffer.push(format!("{} {};", dtype.lexeme, id.lexeme));
 
@@ -71,15 +85,19 @@ impl Semantic {
 
             let id = stack[1].borrow();
 
-            match Semantic::get_data_type(&id)? {
+            let s = match Semantic::get_data_type(&id)? {
 
-                DataType::INTEGER => self.buffer.push(format!("scanf(\"%d\", &{});", id.lexeme)),
+                DataType::INTEGER => format!("scanf(\"%d\", &{});", id.lexeme),
 
-                DataType::REAL => self.buffer.push(format!("scanf(\"%lf\", &{});", id.lexeme)),
+                DataType::REAL => format!("scanf(\"%lf\", &{});", id.lexeme),
 
-                DataType::LITERAL => self.buffer.push(format!("scanf(\"%s\", {});", id.lexeme))
+                DataType::LITERAL => format!("scanf(\"%s\", {});", id.lexeme)
 
-            }
+            };
+
+            Self::print(&format!("Imprimir: {}", s));
+
+            self.buffer.push(s);
 
         }
 
@@ -93,21 +111,21 @@ impl Semantic {
 
             let item = stack[1].borrow();
 
-            match item.token {
+            let s = match item.token {
 
-                symbols::tokens::NUMBER => self.buffer.push(format!("printf(\"{}\");", item.lexeme)),
+                symbols::tokens::NUMBER => format!("printf(\"{}\");", item.lexeme),
 
-                symbols::tokens::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme)),
+                symbols::tokens::LITERAL => format!("printf(\"%s\", {});", item.lexeme),
 
                 symbols::tokens::IDENTIFIER => {
 
                     match Semantic::get_data_type(&item)? {
 
-                        DataType::INTEGER => self.buffer.push(format!("printf(\"%d\", {});", item.lexeme)),
+                        DataType::INTEGER => format!("printf(\"%d\", {});", item.lexeme),
 
-                        DataType::REAL => self.buffer.push(format!("printf(\"%lf\", {});", item.lexeme)),
+                        DataType::REAL => format!("printf(\"%lf\", {});", item.lexeme),
 
-                        DataType::LITERAL => self.buffer.push(format!("printf(\"%s\", {});", item.lexeme))
+                        DataType::LITERAL => format!("printf(\"%s\", {});", item.lexeme)
 
                     }
 
@@ -115,7 +133,11 @@ impl Semantic {
 
                 _ => panic!("handle_es_out: Token inesperado")
 
-            }
+            };
+
+            Self::print(&format!("Imprimir: {}", s));
+
+            self.buffer.push(s);
 
         }
 
@@ -125,17 +147,23 @@ impl Semantic {
 
     pub fn handle_arg_lit(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
+        Self::print("ARG.atributos <- literal.atributos");
+
         Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_arg_num(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
+        Self::print("ARG.atributos <- num.atributos");
+
         Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_arg_id(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("ARG.atributos <- id.atributos");
 
         if let Some(item) = stack.first() {
 
@@ -153,11 +181,15 @@ impl Semantic {
 
     pub fn handle_oprd_num(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
+        Self::print("OPRD.atributos <- num.atributos");
+
         Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
     }
 
     pub fn handle_oprd_id(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("OPRD.atributos <- id.atributos");
 
         if let Some(item) = stack.first() {
 
@@ -183,15 +215,19 @@ impl Semantic {
 
             if Some(data_type) == ld.data_type {
 
-                if data_type == DataType::LITERAL {
+                let s = if data_type == DataType::LITERAL {
 
-                    self.buffer.push(format!("sprintf({}, \"%s\", {});", id.lexeme, ld.lexeme));
+                    format!("sprintf({}, \"%s\", {});", id.lexeme, ld.lexeme)
 
                 }else{
 
-                    self.buffer.push(format!("{} = {};", id.lexeme, ld.lexeme));
+                    format!("{} = {};", id.lexeme, ld.lexeme)
 
-                }
+                };
+
+                Self::print(&format!("Imprimir: {}", s));
+
+                self.buffer.push(s);
 
             }else{
 
@@ -206,6 +242,8 @@ impl Semantic {
     }
 
     pub fn handle_ld(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("LD.atributos <- OPRD.atributos");
 
         Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
 
@@ -222,8 +260,11 @@ impl Semantic {
             if op1.data_type == op2.data_type && op1.data_type != Some(DataType::LITERAL) {
 
                 let x = self.temp.len();
+                let s = format!("T{} = {} {} {};", x, op1.lexeme, opm.lexeme, op2.lexeme);
 
-                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opm.lexeme, op2.lexeme));
+                Self::print(&format!("LD.lexema <- T{}\nImprimir: {}", x, s));
+
+                self.buffer.push(s);
                 self.temp.push(op1.data_type.unwrap());
 
                 Ok(Semantic::make_symbol(&format!("T{}", x), "", op1.data_type))
@@ -254,8 +295,11 @@ impl Semantic {
 
                 let x = self.temp.len();
                 let opr_lexeme = if opr.lexeme == "=" { "==" }else{ &opr.lexeme };
+                let s = format!("T{} = {} {} {};", x, op1.lexeme, opr_lexeme, op2.lexeme);
 
-                self.buffer.push(format!("T{} = {} {} {};", x, op1.lexeme, opr_lexeme, op2.lexeme));
+                Self::print(&format!("EXP_R.lexema <- T{}\nImprimir: {}", x, s));
+
+                self.buffer.push(s);
                 self.temp.push(op1.data_type.unwrap());
 
                 Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
@@ -279,8 +323,11 @@ impl Semantic {
         if stack.len() >= 3 {
 
             let expr = stack[2].borrow();
+            let s = format!("if({}){{", expr.lexeme);
 
-            self.buffer.push(format!("if({}){{", expr.lexeme));
+            Self::print(&format!("Imprimir: {}", s));
+
+            self.buffer.push(s);
 
         }
 
@@ -289,6 +336,8 @@ impl Semantic {
     }
 
     pub fn handle_if_end(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+
+        Self::print("}");
 
         self.buffer.push("}".to_string());
 
@@ -307,8 +356,11 @@ impl Semantic {
         if stack.len() >= 3 {
 
             let expr = stack[2].borrow();
+            let s = format!("while({}){{", expr.lexeme);
 
-            self.buffer.push(format!("while({}){{", expr.lexeme));
+            Self::print(&format!("Imprimir: {}", s));
+
+            self.buffer.push(s);
 
         }
 
@@ -320,7 +372,11 @@ impl Semantic {
 
         if let Some(expr) = self.loop_expr.pop() {
 
-            self.buffer.push(format!("{}\n}}", expr));
+            let s = format!("{}\n}}", expr);
+
+            Self::print(&format!("Imprimir: {}", s));
+
+            self.buffer.push(s);
 
         }
 
