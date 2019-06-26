@@ -40,7 +40,7 @@ impl Semantic {
 
         Self::print("TIPO.tipo <- int.tipo");
 
-        Ok(Semantic::make_symbol("int", "", Some(DataType::INTEGER)))
+        Ok(Self::make_symbol("int", "", Some(DataType::INTEGER)))
 
     }
 
@@ -48,7 +48,7 @@ impl Semantic {
 
         Self::print("TIPO.tipo <- real.tipo");
 
-        Ok(Semantic::make_symbol("double", "", Some(DataType::REAL)))
+        Ok(Self::make_symbol("double", "", Some(DataType::REAL)))
 
     }
 
@@ -56,7 +56,7 @@ impl Semantic {
 
         Self::print("TIPO.tipo <- lit.tipo");
 
-        Ok(Semantic::make_symbol("literal", "", Some(DataType::LITERAL)))
+        Ok(Self::make_symbol("literal", "", Some(DataType::LITERAL)))
 
     }
 
@@ -75,7 +75,7 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("D"))
 
     }
 
@@ -85,7 +85,7 @@ impl Semantic {
 
             let id = stack[1].borrow();
 
-            let s = match Semantic::get_data_type(&id)? {
+            let s = match Self::get_data_type(&id)? {
 
                 DataType::INTEGER => format!("scanf(\"%d\", &{});", id.lexeme),
 
@@ -101,7 +101,7 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("ES"))
 
     }
 
@@ -119,7 +119,7 @@ impl Semantic {
 
                 symbols::tokens::IDENTIFIER => {
 
-                    match Semantic::get_data_type(&item)? {
+                    match Self::get_data_type(&item)? {
 
                         DataType::INTEGER => format!("printf(\"%d\", {});", item.lexeme),
 
@@ -141,7 +141,7 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("ES"))
 
     }
 
@@ -149,7 +149,7 @@ impl Semantic {
 
         Self::print("ARG.atributos <- literal.atributos");
 
-        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("ARG") })
 
     }
 
@@ -157,7 +157,7 @@ impl Semantic {
 
         Self::print("ARG.atributos <- num.atributos");
 
-        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("ARG") })
 
     }
 
@@ -167,13 +167,13 @@ impl Semantic {
 
         if let Some(item) = stack.first() {
 
-            Semantic::get_data_type(&item.borrow())?;
+            Self::get_data_type(&item.borrow())?;
 
             Ok(item.clone())
 
         }else{
 
-            Ok(Semantic::null())
+            Ok(Self::make_nterminal("ARG"))
 
         }
 
@@ -183,7 +183,7 @@ impl Semantic {
 
         Self::print("OPRD.atributos <- num.atributos");
 
-        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("OPRD") })
 
     }
 
@@ -193,13 +193,13 @@ impl Semantic {
 
         if let Some(item) = stack.first() {
 
-            Semantic::get_data_type(&item.borrow())?;
+            Self::get_data_type(&item.borrow())?;
 
             Ok(item.clone())
 
         }else{
 
-            Ok(Semantic::null())
+            Ok(Self::make_nterminal("OPRD"))
 
         }
 
@@ -211,7 +211,7 @@ impl Semantic {
 
             let id = stack[0].borrow();
             let ld = stack[2].borrow();
-            let data_type = Semantic::get_data_type(&id)?;
+            let data_type = Self::get_data_type(&id)?;
 
             if Some(data_type) == ld.data_type {
 
@@ -237,7 +237,7 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("CMD"))
 
     }
 
@@ -245,7 +245,7 @@ impl Semantic {
 
         Self::print("LD.atributos <- OPRD.atributos");
 
-        Ok(if let Some(item) = stack.first() { item.clone() }else{ Semantic::null() })
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("LD") })
 
     }
 
@@ -267,7 +267,7 @@ impl Semantic {
                 self.buffer.push(s);
                 self.temp.push(op1.data_type.unwrap());
 
-                Ok(Semantic::make_symbol(&format!("T{}", x), "", op1.data_type))
+                Ok(Self::make_symbol(&format!("T{}", x), "", op1.data_type))
 
             }else{
 
@@ -277,7 +277,7 @@ impl Semantic {
 
         }else{
 
-            Ok(Semantic::null())
+            Ok(Self::make_nterminal("LD"))
 
         }
 
@@ -302,7 +302,7 @@ impl Semantic {
                 self.buffer.push(s);
                 self.temp.push(op1.data_type.unwrap());
 
-                Ok(Semantic::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
+                Ok(Self::make_symbol(&format!("T{}", x), "", Some(DataType::INTEGER)))
 
             }else{
 
@@ -312,7 +312,7 @@ impl Semantic {
 
         }else{
 
-            Ok(Semantic::null())
+            Ok(Self::make_nterminal("EXP_R"))
 
         }
 
@@ -331,17 +331,17 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("CABEÇALHO"))
 
     }
 
-    pub fn handle_if_end(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+    pub fn handle_if_end(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
-        Self::print("}");
+        Self::print("Imprimir: }");
 
         self.buffer.push("}".to_string());
 
-        Ok(Semantic::null())
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("COND") })
 
     }
 
@@ -364,11 +364,11 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(Self::make_nterminal("CABEÇALHOREP"))
 
     }
 
-    pub fn handle_while_end(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+    pub fn handle_while_end(&mut self, stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
 
         if let Some(expr) = self.loop_expr.pop() {
 
@@ -380,13 +380,13 @@ impl Semantic {
 
         }
 
-        Ok(Semantic::null())
+        Ok(if let Some(item) = stack.first() { item.clone() }else{ Self::make_nterminal("REP") })
 
     }
 
-    pub fn handle_null(&mut self, _stack: &[SharedSymbol]) -> Result<SharedSymbol, SemanticError> {
+    pub fn make_nterminal(left_side: &str) -> SharedSymbol {
 
-        Ok(Semantic::null())
+        Self::make_symbol(left_side, "", None)
 
     }
 
@@ -437,7 +437,7 @@ void main(void){{
 
     pub fn null() -> SharedSymbol {
 
-        Semantic::make_symbol("", "", None)
+        Self::make_symbol("_", "", None)
 
     }
 

@@ -134,7 +134,7 @@ impl<'a> PDA {
 
             if self.panic_discard(&lexeme) {
 
-                return Ok(false);
+                return Err(errors);
 
             }
 
@@ -289,27 +289,29 @@ impl<'a> PDA {
 
                         self.stack.push(new_state);
 
-                        let handler = rule.handler.unwrap_or(Semantic::handle_null);
+                        if let Some(handler) = rule.handler {
 
-                        match handler(&mut self.semantic, &tokens) {
+                            match handler(&mut self.semantic, &tokens) {
 
-                            Ok(new_token) => {
+                                Ok(new_token) => self.t_stack.push(new_token),
 
-                                self.t_stack.push(new_token);
+                                Err(e) => {
 
-                                return Ok(());
+                                    self.t_stack.push(Semantic::null());
 
-                            },
+                                    return Err(e);
 
-                            Err(e) => {
-
-                                self.t_stack.push(Semantic::null());
-
-                                return Err(e);
+                                }
 
                             }
 
+                        }else{
+
+                            self.t_stack.push(Semantic::make_nterminal(&rule.left_side));
+
                         }
+
+                        return Ok(());
 
                     }else{
 

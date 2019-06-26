@@ -618,11 +618,11 @@ impl Syntactic {
 
                                 errors.push_ln(Box::new(e), current_line, current_column);
 
-                                return Err(errors);
+                            }else{
+
+                                return Ok(());
 
                             }
-
-                            return Ok(());
 
                         }
 
@@ -632,11 +632,7 @@ impl Syntactic {
 
                     Ok(false) => (),
 
-                    Err(e) => {
-
-                        errors.merge_ln(e, current_line, current_column)
-
-                    }
+                    Err(e) => errors.merge_ln(e, current_line, current_column)
 
                 }
 
